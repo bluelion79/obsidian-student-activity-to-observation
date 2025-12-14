@@ -168,6 +168,63 @@ function parseTSV(data: string): StudentActivity[] {
 }
 
 /**
+ * 가상 이름 풀 (학번/이름 없는 데이터용)
+ */
+const VIRTUAL_NAMES = [
+  '학생A', '학생B', '학생C', '학생D', '학생E',
+  '학생F', '학생G', '학생H', '학생I', '학생J',
+  '학생K', '학생L', '학생M', '학생N', '학생O',
+  '학생P', '학생Q', '학생R', '학생S', '학생T',
+  '학생U', '학생V', '학생W', '학생X', '학생Y', '학생Z'
+];
+
+/**
+ * 스마트 TSV 파싱 (다양한 입력 형식 지원)
+ * - 3개 필드: 학번\t이름\t활동내용 → 그대로 사용
+ * - 2개 필드: 이름\t활동내용 → 가상 학번 생성
+ * - 1개 필드: 활동내용만 → 가상 학번/이름 생성
+ */
+function parseSmartTSV(data: string): StudentActivity[] {
+  const lines = data.trim().split('\n');
+  const activities: StudentActivity[] = [];
+  let virtualIdCounter = 10001; // 5자리 학번 시작
+  let virtualNameIndex = 0;
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+
+    const parts = trimmedLine.split('\t');
+
+    if (parts.length >= 3) {
+      // Case 1: 완전한 형식 (학번\t이름\t활동내용)
+      activities.push({
+        studentId: parts[0].trim(),
+        studentName: parts[1].trim(),
+        activityContent: parts.slice(2).join(' ').trim(),
+      });
+    } else if (parts.length === 2) {
+      // Case 2: 이름\t활동내용 (학번 누락)
+      activities.push({
+        studentId: String(virtualIdCounter++),
+        studentName: parts[0].trim(),
+        activityContent: parts[1].trim(),
+      });
+    } else {
+      // Case 3: 활동내용만 (학번/이름 모두 누락)
+      activities.push({
+        studentId: String(virtualIdCounter++),
+        studentName: VIRTUAL_NAMES[virtualNameIndex % VIRTUAL_NAMES.length],
+        activityContent: trimmedLine,
+      });
+      virtualNameIndex++;
+    }
+  }
+
+  return activities;
+}
+
+/**
  * 마크다운 테이블 생성 (학번, 성명, 학생활동기록, 교사관찰기록, 글자 수, 바이트 수)
  */
 function generateMarkdownTable(records: ObservationRecord[]): string {
@@ -543,6 +600,171 @@ class InputModal extends Modal {
   }
 }
 
+// ==================== Selection Input Modal ====================
+
+class SelectionInputModal extends Modal {
+  plugin: StudentActivityPlugin;
+  selectionData: string;
+  targetCharCount: number;
+  onSubmit: (data: string, charCount: number) => void;
+
+  constructor(
+    app: App,
+    plugin: StudentActivityPlugin,
+    selectionData: string,
+    onSubmit: (data: string, charCount: number) => void
+  ) {
+    super(app);
+    this.plugin = plugin;
+    this.selectionData = selectionData;
+    this.targetCharCount = plugin.settings.targetCharCount;
+    this.onSubmit = onSubmit;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('student-activity-modal');
+
+    contentEl.createEl('h2', { text: '선택 영역에서 교사관찰기록 변환' });
+
+    // 입력 안내
+    contentEl.createEl('p', {
+      text: '선택된 텍스트를 확인하고 필요시 수정하세요. 학번/이름이 없는 경우 자동으로 생성됩니다.',
+      cls: 'student-activity-description',
+    });
+
+    // 텍스트 영역 (선택된 텍스트로 미리 채움)
+    const textAreaContainer = contentEl.createDiv({ cls: 'student-activity-textarea-container' });
+    const textArea = textAreaContainer.createEl('textarea', {
+      cls: 'student-activity-textarea',
+      attr: {
+        rows: '10',
+        placeholder: '활동 내용을 입력하세요...\n\n형식:\n- 학번\\t이름\\t활동내용\n- 이름\\t활동내용\n- 활동내용만'
+      },
+    });
+    textArea.value = this.selectionData;
+    textArea.addEventListener('input', (e) => {
+      this.selectionData = (e.target as HTMLTextAreaElement).value;
+      this.updateSmartPreview();
+    });
+
+    // 미리보기 영역
+    const previewContainer = contentEl.createDiv({ cls: 'student-activity-preview' });
+    previewContainer.createEl('h4', { text: '파싱 결과 미리보기' });
+    const previewContent = previewContainer.createDiv({ cls: 'student-activity-preview-content' });
+
+    // 초기 미리보기 업데이트
+    this.updateSmartPreviewContent(previewContent);
+
+    // 글자수 설정
+    const charCountContainer = contentEl.createDiv({ cls: 'student-activity-char-count' });
+
+    new Setting(charCountContainer)
+      .setName('목표 글자 수')
+      .setDesc('생성될 교사관찰기록의 목표 글자 수를 설정합니다.')
+      .addText((text) => {
+        text
+          .setValue(String(this.targetCharCount))
+          .onChange((value) => {
+            const num = parseInt(value);
+            if (!isNaN(num) && num > 0) {
+              this.targetCharCount = num;
+              this.updateByteEstimate();
+            }
+          });
+        text.inputEl.type = 'number';
+        text.inputEl.min = '100';
+        text.inputEl.max = '2000';
+      });
+
+    // 예상 바이트수 표시
+    const byteEstimateEl = charCountContainer.createDiv({ cls: 'student-activity-byte-estimate' });
+    byteEstimateEl.setText(`예상 바이트 수: ${estimateBytes(this.targetCharCount)} 바이트`);
+
+    // 버튼 컨테이너
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+
+    const cancelBtn = buttonContainer.createEl('button', {
+      text: '취소',
+      cls: 'student-activity-cancel-btn'
+    });
+    cancelBtn.addEventListener('click', () => {
+      this.close();
+    });
+
+    const submitBtn = buttonContainer.createEl('button', {
+      text: '교사관찰기록 생성',
+      cls: 'mod-cta student-activity-submit-btn',
+    });
+    submitBtn.addEventListener('click', () => {
+      if (!this.selectionData.trim()) {
+        new Notice('데이터를 입력해주세요.');
+        return;
+      }
+      const activities = parseSmartTSV(this.selectionData);
+      if (activities.length === 0) {
+        new Notice('유효한 데이터가 없습니다.');
+        return;
+      }
+      this.onSubmit(this.selectionData, this.targetCharCount);
+      this.close();
+    });
+  }
+
+  updateSmartPreview() {
+    const previewContent = this.contentEl.querySelector('.student-activity-preview-content');
+    if (!previewContent) return;
+    this.updateSmartPreviewContent(previewContent as HTMLElement);
+  }
+
+  updateSmartPreviewContent(previewContent: HTMLElement) {
+    const activities = parseSmartTSV(this.selectionData);
+    if (activities.length === 0) {
+      previewContent.setText('유효한 데이터가 없습니다.');
+      return;
+    }
+
+    // 가상 데이터 여부 확인
+    let hasVirtualData = false;
+    for (const activity of activities) {
+      if (activity.studentId.match(/^1000[1-9]$|^100[1-2][0-9]$|^1003[0-9]$/) ||
+          activity.studentName.match(/^학생[A-Z]$/)) {
+        hasVirtualData = true;
+        break;
+      }
+    }
+
+    let preview = `총 ${activities.length}명의 학생 데이터:\n\n`;
+    for (const activity of activities.slice(0, 5)) {
+      const contentPreview = activity.activityContent.length > 40
+        ? activity.activityContent.substring(0, 40) + '...'
+        : activity.activityContent;
+      preview += `- ${activity.studentId} ${activity.studentName}: ${contentPreview}\n`;
+    }
+    if (activities.length > 5) {
+      preview += `\n... 외 ${activities.length - 5}명`;
+    }
+    if (hasVirtualData) {
+      preview += '\n\n※ 학번/이름이 없는 항목은 자동 생성되었습니다.';
+    }
+
+    previewContent.setText(preview);
+  }
+
+  updateByteEstimate() {
+    const byteEstimateEl = this.contentEl.querySelector('.student-activity-byte-estimate');
+    if (byteEstimateEl) {
+      byteEstimateEl.setText(`예상 바이트 수: ${estimateBytes(this.targetCharCount)} 바이트`);
+    }
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
 // ==================== Progress Modal ====================
 
 class ProgressModal extends Modal {
@@ -555,6 +777,7 @@ class ProgressModal extends Modal {
   currentIndex: number = 0;
   totalCount: number = 0;
   completedStudents: string[] = [];
+  previousStudentName: string = '';
 
   constructor(app: App) {
     super(app);
@@ -637,11 +860,22 @@ class ProgressModal extends Modal {
       }
     }
 
-    // 완료된 학생 목록에 추가
-    if (current > 0 && this.studentListContainer) {
+    // 이전 학생이 완료되었으므로 이전 학생 이름을 목록에 추가
+    if (this.previousStudentName && this.studentListContainer) {
       const studentTag = this.studentListContainer.createSpan({ cls: 'completed-student-tag' });
-      studentTag.setText(`✓ ${studentName}`);
+      studentTag.setText(`✓ ${this.previousStudentName}`);
       // 스크롤을 최신 항목으로
+      this.studentListContainer.scrollTop = this.studentListContainer.scrollHeight;
+    }
+    // 현재 학생 이름 저장 (다음 호출 시 완료 처리용)
+    this.previousStudentName = studentName;
+  }
+
+  // 마지막 학생 완료 처리
+  markLastStudentComplete() {
+    if (this.previousStudentName && this.studentListContainer) {
+      const studentTag = this.studentListContainer.createSpan({ cls: 'completed-student-tag' });
+      studentTag.setText(`✓ ${this.previousStudentName}`);
       this.studentListContainer.scrollTop = this.studentListContainer.scrollHeight;
     }
   }
@@ -817,7 +1051,7 @@ export default class StudentActivityPlugin extends Plugin {
       },
     });
 
-    // 커맨드: 선택 영역에서 변환
+    // 커맨드: 선택 영역에서 변환 (Modal 사용, 스마트 파싱)
     this.addCommand({
       id: 'convert-from-selection',
       name: '선택 영역에서 교사관찰기록 변환',
@@ -827,7 +1061,14 @@ export default class StudentActivityPlugin extends Plugin {
           new Notice('텍스트를 선택해주세요.');
           return;
         }
-        this.processConversion(selection, this.settings.targetCharCount);
+        if (!this.settings.apiKey) {
+          new Notice('API 키를 설정해주세요. (설정 → 학생활동 → 교사관찰기록 변환)');
+          return;
+        }
+        // Modal을 열어서 미리보기 및 글자수 조정 가능하게
+        new SelectionInputModal(this.app, this, selection, (data, charCount) => {
+          this.processConversionSmart(data, charCount);
+        }).open();
       },
     });
 
@@ -954,6 +1195,111 @@ export default class StudentActivityPlugin extends Plugin {
       }
     }
 
+    // 마지막 학생 완료 표시
+    progressModal.markLastStudentComplete();
+    progressModal.close();
+
+    // 결과 노트 생성
+    await this.createResultNote(records);
+
+    if (errorCount > 0) {
+      new Notice(`변환 완료! (${records.length - errorCount}명 성공, ${errorCount}명 실패)`);
+    } else {
+      new Notice(`${records.length}명의 교사관찰기록 변환 완료!`);
+    }
+  }
+
+  /**
+   * 스마트 파싱을 사용하는 변환 처리 (선택 영역 변환용)
+   * - 학번/이름 없는 데이터도 가상 학번/이름으로 처리
+   */
+  async processConversionSmart(data: string, targetCharCount: number) {
+    const activities = parseSmartTSV(data);
+
+    if (activities.length === 0) {
+      new Notice('변환할 데이터가 없습니다.');
+      return;
+    }
+
+    const progressModal = new ProgressModal(this.app);
+    progressModal.open();
+
+    const records: ObservationRecord[] = [];
+    let errorCount = 0;
+
+    for (let i = 0; i < activities.length; i++) {
+      const activity = activities[i];
+      progressModal.updateProgress(i + 1, activities.length, activity.studentName);
+
+      try {
+        let observation: string;
+
+        switch (this.settings.apiProvider) {
+          case 'openai':
+            observation = await callOpenAI(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.openai,
+              activity,
+              targetCharCount
+            );
+            break;
+          case 'claude':
+            observation = await callClaude(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.claude,
+              activity,
+              targetCharCount
+            );
+            break;
+          case 'gemini':
+            observation = await callGemini(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.gemini,
+              activity,
+              targetCharCount
+            );
+            break;
+          case 'grok':
+            observation = await callGrok(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.grok,
+              activity,
+              targetCharCount
+            );
+            break;
+          default:
+            throw new Error(`지원하지 않는 AI 제공자: ${this.settings.apiProvider}`);
+        }
+
+        records.push({
+          studentId: activity.studentId,
+          studentName: activity.studentName,
+          activityContent: activity.activityContent,
+          observation: observation,
+          charCount: countChars(observation),
+          byteCount: countBytes(observation),
+        });
+      } catch (error) {
+        console.error(`Error processing ${activity.studentName}:`, error);
+        errorCount++;
+        records.push({
+          studentId: activity.studentId,
+          studentName: activity.studentName,
+          activityContent: activity.activityContent,
+          observation: `[변환 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}]`,
+          charCount: 0,
+          byteCount: 0,
+        });
+      }
+
+      // API 호출 간 딜레이 (rate limit 방지)
+      if (i < activities.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+
+    // 마지막 학생 완료 표시
+    progressModal.markLastStudentComplete();
     progressModal.close();
 
     // 결과 노트 생성
