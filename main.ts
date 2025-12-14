@@ -147,21 +147,38 @@ function estimateBytes(charCount: number): number {
 }
 
 /**
+ * 학번 패턴 확인 (5자리 숫자)
+ */
+function isStudentId(value: string): boolean {
+  return /^\d{5}$/.test(value.trim());
+}
+
+/**
  * TSV 데이터 파싱 (탭 구분)
+ * - 학번(5자리 숫자)으로 시작하는 줄만 새 학생으로 인식
+ * - 그렇지 않은 줄은 이전 학생의 활동 내용에 병합
  */
 function parseTSV(data: string): StudentActivity[] {
   const lines = data.trim().split('\n');
   const activities: StudentActivity[] = [];
 
   for (const line of lines) {
-    const parts = line.split('\t');
-    if (parts.length >= 3) {
+    const parts = line.split('\t').map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length === 0) continue;
+
+    // 첫 번째 필드가 5자리 학번인지 확인
+    if (parts.length >= 3 && isStudentId(parts[0])) {
+      // 새 학생 데이터
       activities.push({
-        studentId: parts[0].trim(),
-        studentName: parts[1].trim(),
-        activityContent: parts.slice(2).join(' ').trim(),
+        studentId: parts[0],
+        studentName: parts[1],
+        activityContent: parts.slice(2).join(' '),
       });
+    } else if (activities.length > 0) {
+      // 이전 학생의 활동 내용에 병합
+      activities[activities.length - 1].activityContent += ' ' + parts.join(' ');
     }
+    // 첫 줄이 학번으로 시작하지 않으면 무시
   }
 
   return activities;
@@ -180,9 +197,8 @@ const VIRTUAL_NAMES = [
 
 /**
  * 스마트 TSV 파싱 (다양한 입력 형식 지원)
- * - 3개 필드: 학번\t이름\t활동내용 → 그대로 사용
- * - 2개 필드: 이름\t활동내용 → 가상 학번 생성
- * - 1개 필드: 활동내용만 → 가상 학번/이름 생성
+ * - 학번(5자리 숫자)으로 시작하는 줄: 새 학생으로 인식
+ * - 그렇지 않은 줄: 이전 학생 활동에 병합 또는 가상 학번/이름 생성
  */
 function parseSmartTSV(data: string): StudentActivity[] {
   const lines = data.trim().split('\n');
@@ -194,28 +210,36 @@ function parseSmartTSV(data: string): StudentActivity[] {
     const trimmedLine = line.trim();
     if (!trimmedLine) continue;
 
-    const parts = trimmedLine.split('\t');
+    const parts = trimmedLine.split('\t').map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length === 0) continue;
 
-    if (parts.length >= 3) {
-      // Case 1: 완전한 형식 (학번\t이름\t활동내용)
-      activities.push({
-        studentId: parts[0].trim(),
-        studentName: parts[1].trim(),
-        activityContent: parts.slice(2).join(' ').trim(),
-      });
-    } else if (parts.length === 2) {
-      // Case 2: 이름\t활동내용 (학번 누락)
-      activities.push({
-        studentId: String(virtualIdCounter++),
-        studentName: parts[0].trim(),
-        activityContent: parts[1].trim(),
-      });
+    // 첫 번째 필드가 5자리 학번인지 확인
+    if (isStudentId(parts[0])) {
+      if (parts.length >= 3) {
+        // Case 1: 완전한 형식 (학번\t이름\t활동내용)
+        activities.push({
+          studentId: parts[0],
+          studentName: parts[1],
+          activityContent: parts.slice(2).join(' '),
+        });
+      } else if (parts.length === 2) {
+        // Case 2: 학번\t활동내용 (이름 누락)
+        activities.push({
+          studentId: parts[0],
+          studentName: VIRTUAL_NAMES[virtualNameIndex % VIRTUAL_NAMES.length],
+          activityContent: parts[1],
+        });
+        virtualNameIndex++;
+      }
+    } else if (activities.length > 0) {
+      // 이전 학생의 활동 내용에 병합
+      activities[activities.length - 1].activityContent += ' ' + parts.join(' ');
     } else {
-      // Case 3: 활동내용만 (학번/이름 모두 누락)
+      // 첫 줄부터 학번 없이 시작하는 경우: 가상 학번/이름 생성
       activities.push({
         studentId: String(virtualIdCounter++),
         studentName: VIRTUAL_NAMES[virtualNameIndex % VIRTUAL_NAMES.length],
-        activityContent: trimmedLine,
+        activityContent: parts.join(' '),
       });
       virtualNameIndex++;
     }

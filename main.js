@@ -119,17 +119,24 @@ function countBytes(text) {
 function estimateBytes(charCount) {
   return Math.round(charCount * 0.8 * 3 + charCount * 0.2 * 1);
 }
+function isStudentId(value) {
+  return /^\d{5}$/.test(value.trim());
+}
 function parseTSV(data) {
   const lines = data.trim().split("\n");
   const activities = [];
   for (const line of lines) {
-    const parts = line.split("	");
-    if (parts.length >= 3) {
+    const parts = line.split("	").map((p) => p.trim()).filter((p) => p.length > 0);
+    if (parts.length === 0)
+      continue;
+    if (parts.length >= 3 && isStudentId(parts[0])) {
       activities.push({
-        studentId: parts[0].trim(),
-        studentName: parts[1].trim(),
-        activityContent: parts.slice(2).join(" ").trim()
+        studentId: parts[0],
+        studentName: parts[1],
+        activityContent: parts.slice(2).join(" ")
       });
+    } else if (activities.length > 0) {
+      activities[activities.length - 1].activityContent += " " + parts.join(" ");
     }
   }
   return activities;
@@ -171,24 +178,31 @@ function parseSmartTSV(data) {
     const trimmedLine = line.trim();
     if (!trimmedLine)
       continue;
-    const parts = trimmedLine.split("	");
-    if (parts.length >= 3) {
-      activities.push({
-        studentId: parts[0].trim(),
-        studentName: parts[1].trim(),
-        activityContent: parts.slice(2).join(" ").trim()
-      });
-    } else if (parts.length === 2) {
-      activities.push({
-        studentId: String(virtualIdCounter++),
-        studentName: parts[0].trim(),
-        activityContent: parts[1].trim()
-      });
+    const parts = trimmedLine.split("	").map((p) => p.trim()).filter((p) => p.length > 0);
+    if (parts.length === 0)
+      continue;
+    if (isStudentId(parts[0])) {
+      if (parts.length >= 3) {
+        activities.push({
+          studentId: parts[0],
+          studentName: parts[1],
+          activityContent: parts.slice(2).join(" ")
+        });
+      } else if (parts.length === 2) {
+        activities.push({
+          studentId: parts[0],
+          studentName: VIRTUAL_NAMES[virtualNameIndex % VIRTUAL_NAMES.length],
+          activityContent: parts[1]
+        });
+        virtualNameIndex++;
+      }
+    } else if (activities.length > 0) {
+      activities[activities.length - 1].activityContent += " " + parts.join(" ");
     } else {
       activities.push({
         studentId: String(virtualIdCounter++),
         studentName: VIRTUAL_NAMES[virtualNameIndex % VIRTUAL_NAMES.length],
-        activityContent: trimmedLine
+        activityContent: parts.join(" ")
       });
       virtualNameIndex++;
     }
