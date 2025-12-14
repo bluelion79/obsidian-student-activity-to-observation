@@ -135,7 +135,7 @@ function parseTSV(data) {
   return activities;
 }
 function generateMarkdownTable(records) {
-  let table = "| 학번 | 성명 | 학생활동기록 | 교사관찰기록 | 글자 수 | 바이트 수 |\n";
+  let table = "| \uD559\uBC88 | \uC131\uBA85 | \uD559\uC0DD\uD65C\uB3D9\uAE30\uB85D | \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D | \uAE00\uC790 \uC218 | \uBC14\uC774\uD2B8 \uC218 |\n";
   table += "|------|------|-------------|-------------|---------|----------|\n";
   for (const record of records) {
     const escapedActivity = record.activityContent.replace(/\|/g, "\\|").replace(/\n/g, " ");
@@ -145,58 +145,58 @@ function generateMarkdownTable(records) {
   return table;
 }
 function generateTSVData(records) {
-  let tsv = "학번\t성명\t학생활동기록\t교사관찰기록\t글자 수\t바이트 수\n";
+  let tsv = "\uD559\uBC88	\uC131\uBA85	\uD559\uC0DD\uD65C\uB3D9\uAE30\uB85D	\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D	\uAE00\uC790 \uC218	\uBC14\uC774\uD2B8 \uC218\n";
   for (const record of records) {
     const cleanActivity = record.activityContent.replace(/[\t\n\r]/g, " ");
     const cleanObservation = record.observation.replace(/[\t\n\r]/g, " ");
-    tsv += `${record.studentId}\t${record.studentName}\t${cleanActivity}\t${cleanObservation}\t${record.charCount}\t${record.byteCount}\n`;
+    tsv += `${record.studentId}	${record.studentName}	${cleanActivity}	${cleanObservation}	${record.charCount}	${record.byteCount}\n`;
   }
   return tsv;
 }
-var SYSTEM_PROMPT = `당신은 학생을 깊이 이해하고 애정을 가지고 관찰하는 한국 고등학교 담임교사입니다.
-학생의 활동 내용을 바탕으로 교사 관찰 기록을 작성해주세요.
+var SYSTEM_PROMPT = `\uB2F9\uC2E0\uC740 \uD559\uC0DD\uC744 \uAE4A\uC774 \uC774\uD574\uD558\uACE0 \uC560\uC815\uC744 \uAC00\uC9C0\uACE0 \uAD00\uCC30\uD558\uB294 \uD55C\uAD6D \uACE0\uB4F1\uD559\uAD50 \uB2F4\uC784\uAD50\uC0AC\uC785\uB2C8\uB2E4.
+\uD559\uC0DD\uC758 \uD65C\uB3D9 \uB0B4\uC6A9\uC744 \uBC14\uD0D5\uC73C\uB85C \uAD50\uC0AC \uAD00\uCC30 \uAE30\uB85D\uC744 \uC791\uC131\uD574\uC8FC\uC138\uC694.
 
-[핵심 원칙]
-- 인공지능이 작성한 것이 아닌, 교사가 학생을 직접 관찰하고 애정을 담아 작성한 기록처럼 보여야 합니다
-- 학생의 강점, 노력, 성장 과정을 따뜻하게 서술합니다
-- 객관적 사실에 기반하되, 교사의 긍정적 관점을 담습니다
+[\uD575\uC2EC \uC6D0\uCE59]
+- \uC778\uACF5\uC9C0\uB2A5\uC774 \uC791\uC131\uD55C \uAC83\uC774 \uC544\uB2CC, \uAD50\uC0AC\uAC00 \uD559\uC0DD\uC744 \uC9C1\uC811 \uAD00\uCC30\uD558\uACE0 \uC560\uC815\uC744 \uB2F4\uC544 \uC791\uC131\uD55C \uAE30\uB85D\uCC98\uB7FC \uBCF4\uC5EC\uC57C \uD569\uB2C8\uB2E4
+- \uD559\uC0DD\uC758 \uAC15\uC810, \uB178\uB825, \uC131\uC7A5 \uACFC\uC815\uC744 \uB530\uB73B\uD558\uAC8C \uC11C\uC220\uD569\uB2C8\uB2E4
+- \uAC1D\uAD00\uC801 \uC0AC\uC2E4\uC5D0 \uAE30\uBC18\uD558\uB418, \uAD50\uC0AC\uC758 \uAE0D\uC815\uC801 \uAD00\uC810\uC744 \uB2F4\uC2B5\uB2C8\uB2E4
 
-[문체 규칙]
-- 서술형 종결어미 사용: "~함", "~임", "~남", "~보임", "~드러냄"
-- 제목, 머리말, 학생 이름 포함 금지
-- 3인칭 관찰자 시점으로 작성
-- 한 문단으로 자연스럽게 이어지도록 작성
+[\uBB38\uCCB4 \uADDC\uCE59]
+- \uC11C\uC220\uD615 \uC885\uACB0\uC5B4\uBBF8 \uC0AC\uC6A9: "~\uD568", "~\uC784", "~\uB0A8", "~\uBCF4\uC784", "~\uB4DC\uB7EC\uB0C4"
+- \uC81C\uBAA9, \uBA38\uB9AC\uB9D0, \uD559\uC0DD \uC774\uB984 \uD3EC\uD568 \uAE08\uC9C0
+- 3\uC778\uCE6D \uAD00\uCC30\uC790 \uC2DC\uC810\uC73C\uB85C \uC791\uC131
+- \uD55C \uBB38\uB2E8\uC73C\uB85C \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uC774\uC5B4\uC9C0\uB3C4\uB85D \uC791\uC131
 
-[내용 구성]
-1. 활동의 구체적 맥락과 참여 양상
-2. 학생이 보여준 역량이나 태도
-3. 활동을 통한 성장이나 발전 가능성
+[\uB0B4\uC6A9 \uAD6C\uC131]
+1. \uD65C\uB3D9\uC758 \uAD6C\uCCB4\uC801 \uB9E5\uB77D\uACFC \uCC38\uC5EC \uC591\uC0C1
+2. \uD559\uC0DD\uC774 \uBCF4\uC5EC\uC900 \uC5ED\uB7C9\uC774\uB098 \uD0DC\uB3C4
+3. \uD65C\uB3D9\uC744 \uD1B5\uD55C \uC131\uC7A5\uC774\uB098 \uBC1C\uC804 \uAC00\uB2A5\uC131
 
-[피해야 할 표현]
-- AI, VR, AR 등 영문 약어 → 인공지능, 가상현실, 증강현실 사용
-- 과도한 수식어나 빈 칭찬
-- 모든 학생에게 적용 가능한 일반적인 표현
-- 기계적이거나 정형화된 문장 패턴
+[\uD53C\uD574\uC57C \uD560 \uD45C\uD604]
+- AI, VR, AR \uB4F1 \uC601\uBB38 \uC57D\uC5B4 \u2192 \uC778\uACF5\uC9C0\uB2A5, \uAC00\uC0C1\uD604\uC2E4, \uC99D\uAC15\uD604\uC2E4 \uC0AC\uC6A9
+- \uACFC\uB3C4\uD55C \uC218\uC2DD\uC5B4\uB098 \uBE48 \uCE6D\uCC2C
+- \uBAA8\uB4E0 \uD559\uC0DD\uC5D0\uAC8C \uC801\uC6A9 \uAC00\uB2A5\uD55C \uC77C\uBC18\uC801\uC778 \uD45C\uD604
+- \uAE30\uACC4\uC801\uC774\uAC70\uB098 \uC815\uD615\uD654\uB41C \uBB38\uC7A5 \uD328\uD134
 
-[좋은 예시 표현]
-- "탐구 과정에서 꼼꼼한 자료 조사와 논리적 분석력을 보여줌"
-- "모둠 활동 시 다양한 의견을 존중하며 협력적 태도로 참여함"
-- "스스로 문제를 발견하고 해결책을 모색하는 자기주도적 학습 역량을 갖춤"
+[\uC88B\uC740 \uC608\uC2DC \uD45C\uD604]
+- "\uD0D0\uAD6C \uACFC\uC815\uC5D0\uC11C \uAF3C\uAF3C\uD55C \uC790\uB8CC \uC870\uC0AC\uC640 \uB17C\uB9AC\uC801 \uBD84\uC11D\uB825\uC744 \uBCF4\uC5EC\uC90C"
+- "\uBAA8\uB460 \uD65C\uB3D9 \uC2DC \uB2E4\uC591\uD55C \uC758\uACAC\uC744 \uC874\uC911\uD558\uBA70 \uD611\uB825\uC801 \uD0DC\uB3C4\uB85C \uCC38\uC5EC\uD568"
+- "\uC2A4\uC2A4\uB85C \uBB38\uC81C\uB97C \uBC1C\uACAC\uD558\uACE0 \uD574\uACB0\uCC45\uC744 \uBAA8\uC0C9\uD558\uB294 \uC790\uAE30\uC8FC\uB3C4\uC801 \uD559\uC2B5 \uC5ED\uB7C9\uC744 \uAC16\uCDA4"
 
-[출력 형식]
-- 추가 설명이나 머리말 없이 교사관찰기록 본문만 출력
-- 자연스러운 한 문단으로 구성`;
+[\uCD9C\uB825 \uD615\uC2DD]
+- \uCD94\uAC00 \uC124\uBA85\uC774\uB098 \uBA38\uB9AC\uB9D0 \uC5C6\uC774 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCF8\uBB38\uB9CC \uCD9C\uB825
+- \uC790\uC5F0\uC2A4\uB7EC\uC6B4 \uD55C \uBB38\uB2E8\uC73C\uB85C \uAD6C\uC131`;
 async function callOpenAI(apiKey, modelId, activity, targetCharCount) {
-  const userPrompt = `[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (±10%)
+  const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
 
-[입력]
-학번: ${activity.studentId}
-이름: ${activity.studentName}
-활동내용: ${activity.activityContent}
+[\uC785\uB825]
+\uD559\uBC88: ${activity.studentId}
+\uC774\uB984: ${activity.studentName}
+\uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
-[출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+[\uCD9C\uB825]
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: "https://api.openai.com/v1/chat/completions",
     method: "POST",
@@ -215,21 +215,21 @@ async function callOpenAI(apiKey, modelId, activity, targetCharCount) {
     })
   });
   if (response.status !== 200) {
-    throw new Error(`OpenAI API 오류: ${response.status}`);
+    throw new Error(`OpenAI API \uC624\uB958: ${response.status}`);
   }
   return response.json.choices[0].message.content.trim();
 }
 async function callClaude(apiKey, modelId, activity, targetCharCount) {
-  const userPrompt = `[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (±10%)
+  const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
 
-[입력]
-학번: ${activity.studentId}
-이름: ${activity.studentName}
-활동내용: ${activity.activityContent}
+[\uC785\uB825]
+\uD559\uBC88: ${activity.studentId}
+\uC774\uB984: ${activity.studentName}
+\uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
-[출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+[\uCD9C\uB825]
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: "https://api.anthropic.com/v1/messages",
     method: "POST",
@@ -246,23 +246,23 @@ async function callClaude(apiKey, modelId, activity, targetCharCount) {
     })
   });
   if (response.status !== 200) {
-    throw new Error(`Claude API 오류: ${response.status}`);
+    throw new Error(`Claude API \uC624\uB958: ${response.status}`);
   }
   return response.json.content[0].text.trim();
 }
 async function callGemini(apiKey, modelId, activity, targetCharCount) {
   const userPrompt = `${SYSTEM_PROMPT}
 
-[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (±10%)
+[\uC81C\uC57D \uC870\uAC74]
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
 
-[입력]
-학번: ${activity.studentId}
-이름: ${activity.studentName}
-활동내용: ${activity.activityContent}
+[\uC785\uB825]
+\uD559\uBC88: ${activity.studentId}
+\uC774\uB984: ${activity.studentName}
+\uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
-[출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+[\uCD9C\uB825]
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId || "gemini-1.5-flash"}:generateContent?key=${apiKey}`,
     method: "POST",
@@ -282,21 +282,21 @@ async function callGemini(apiKey, modelId, activity, targetCharCount) {
     })
   });
   if (response.status !== 200) {
-    throw new Error(`Gemini API 오류: ${response.status}`);
+    throw new Error(`Gemini API \uC624\uB958: ${response.status}`);
   }
   return response.json.candidates[0].content.parts[0].text.trim();
 }
 async function callGrok(apiKey, modelId, activity, targetCharCount) {
-  const userPrompt = `[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (±10%)
+  const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
 
-[입력]
-학번: ${activity.studentId}
-이름: ${activity.studentName}
-활동내용: ${activity.activityContent}
+[\uC785\uB825]
+\uD559\uBC88: ${activity.studentId}
+\uC774\uB984: ${activity.studentName}
+\uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
-[출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+[\uCD9C\uB825]
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: "https://api.x.ai/v1/chat/completions",
     method: "POST",
@@ -315,7 +315,7 @@ async function callGrok(apiKey, modelId, activity, targetCharCount) {
     })
   });
   if (response.status !== 200) {
-    throw new Error(`Grok API 오류: ${response.status}`);
+    throw new Error(`Grok API \uC624\uB958: ${response.status}`);
   }
   return response.json.choices[0].message.content.trim();
 }
@@ -331,26 +331,26 @@ var InputModal = class extends import_obsidian.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("student-activity-modal");
-    contentEl.createEl("h2", { text: "학생활동 → 교사관찰기록 변환" });
+    contentEl.createEl("h2", { text: "\uD559\uC0DD\uD65C\uB3D9 \u2192 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658" });
     contentEl.createEl("p", {
-      text: "구글 스프레드시트에서 복사한 데이터를 붙여넣으세요. (학번 탭 이름 탭 활동내용)",
+      text: "\uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uC5D0\uC11C \uBCF5\uC0AC\uD55C \uB370\uC774\uD130\uB97C \uBD99\uC5EC\uB123\uC73C\uC138\uC694. (\uD559\uBC88 \uD0ED \uC774\uB984 \uD0ED \uD65C\uB3D9\uB0B4\uC6A9)",
       cls: "student-activity-description"
     });
     const textAreaContainer = contentEl.createDiv({ cls: "student-activity-textarea-container" });
     const textArea = textAreaContainer.createEl("textarea", {
       cls: "student-activity-textarea",
-      attr: { rows: "10", placeholder: "10101	김철수	프로젝트 활동에서 리더 역할을 맡아...\n10102	이영희	토론 수업에서 적극적으로 참여하여..." }
+      attr: { rows: "10", placeholder: "10101	\uAE40\uCCA0\uC218	\uD504\uB85C\uC81D\uD2B8 \uD65C\uB3D9\uC5D0\uC11C \uB9AC\uB354 \uC5ED\uD560\uC744 \uB9E1\uC544...\n10102	\uC774\uC601\uD76C	\uD1A0\uB860 \uC218\uC5C5\uC5D0\uC11C \uC801\uADF9\uC801\uC73C\uB85C \uCC38\uC5EC\uD558\uC5EC..." }
     });
     textArea.addEventListener("input", (e) => {
       this.inputData = e.target.value;
       this.updatePreview();
     });
     const previewContainer = contentEl.createDiv({ cls: "student-activity-preview" });
-    previewContainer.createEl("h4", { text: "입력 데이터 미리보기" });
+    previewContainer.createEl("h4", { text: "\uC785\uB825 \uB370\uC774\uD130 \uBBF8\uB9AC\uBCF4\uAE30" });
     const previewContent = previewContainer.createDiv({ cls: "student-activity-preview-content" });
-    previewContent.setText("데이터를 입력하면 여기에 미리보기가 표시됩니다.");
+    previewContent.setText("\uB370\uC774\uD130\uB97C \uC785\uB825\uD558\uBA74 \uC5EC\uAE30\uC5D0 \uBBF8\uB9AC\uBCF4\uAE30\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.");
     const charCountContainer = contentEl.createDiv({ cls: "student-activity-char-count" });
-    new import_obsidian.Setting(charCountContainer).setName("목표 글자 수").setDesc("생성될 교사관찰기록의 목표 글자 수를 설정합니다.").addText((text) => {
+    new import_obsidian.Setting(charCountContainer).setName("\uBAA9\uD45C \uAE00\uC790 \uC218").setDesc("\uC0DD\uC131\uB420 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC758 \uBAA9\uD45C \uAE00\uC790 \uC218\uB97C \uC124\uC815\uD569\uB2C8\uB2E4.").addText((text) => {
       text.setValue(String(this.targetCharCount)).onChange((value) => {
         const num = parseInt(value);
         if (!isNaN(num) && num > 0) {
@@ -363,27 +363,27 @@ var InputModal = class extends import_obsidian.Modal {
       text.inputEl.max = "2000";
     });
     const byteEstimateEl = charCountContainer.createDiv({ cls: "student-activity-byte-estimate" });
-    byteEstimateEl.setText(`예상 바이트 수: ${estimateBytes(this.targetCharCount)} 바이트`);
+    byteEstimateEl.setText(`\uC608\uC0C1 \uBC14\uC774\uD2B8 \uC218: ${estimateBytes(this.targetCharCount)} \uBC14\uC774\uD2B8`);
     const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = buttonContainer.createEl("button", {
-      text: "취소",
+      text: "\uCDE8\uC18C",
       cls: "student-activity-cancel-btn"
     });
     cancelBtn.addEventListener("click", () => {
       this.close();
     });
     const submitBtn = buttonContainer.createEl("button", {
-      text: "교사관찰기록 생성",
+      text: "\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uC0DD\uC131",
       cls: "mod-cta student-activity-submit-btn"
     });
     submitBtn.addEventListener("click", () => {
       if (!this.inputData.trim()) {
-        new import_obsidian.Notice("데이터를 입력해주세요.");
+        new import_obsidian.Notice("\uB370\uC774\uD130\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694.");
         return;
       }
       const activities = parseTSV(this.inputData);
       if (activities.length === 0) {
-        new import_obsidian.Notice("유효한 데이터가 없습니다. 형식: 학번 [탭] 이름 [탭] 활동내용");
+        new import_obsidian.Notice("\uC720\uD6A8\uD55C \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uD615\uC2DD: \uD559\uBC88 [\uD0ED] \uC774\uB984 [\uD0ED] \uD65C\uB3D9\uB0B4\uC6A9");
         return;
       }
       this.onSubmit(this.inputData, this.targetCharCount);
@@ -396,22 +396,22 @@ var InputModal = class extends import_obsidian.Modal {
       return;
     const activities = parseTSV(this.inputData);
     if (activities.length === 0) {
-      previewContent.setText("유효한 데이터가 없습니다. 형식: 학번 탭 이름 탭 활동내용");
+      previewContent.setText("\uC720\uD6A8\uD55C \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uD615\uC2DD: \uD559\uBC88 \uD0ED \uC774\uB984 \uD0ED \uD65C\uB3D9\uB0B4\uC6A9");
       return;
     }
-    let preview = `총 ${activities.length}명의 학생 데이터:\n\n`;
+    let preview = `\uCD1D ${activities.length}\uBA85\uC758 \uD559\uC0DD \uB370\uC774\uD130:\n\n`;
     for (const activity of activities.slice(0, 5)) {
       preview += `- ${activity.studentId} ${activity.studentName}: ${activity.activityContent.substring(0, 50)}...\n`;
     }
     if (activities.length > 5) {
-      preview += `\n... 외 ${activities.length - 5}명`;
+      preview += `\n... \uC678 ${activities.length - 5}\uBA85`;
     }
     previewContent.setText(preview);
   }
   updateByteEstimate() {
     const byteEstimateEl = this.contentEl.querySelector(".student-activity-byte-estimate");
     if (byteEstimateEl) {
-      byteEstimateEl.setText(`예상 바이트 수: ${estimateBytes(this.targetCharCount)} 바이트`);
+      byteEstimateEl.setText(`\uC608\uC0C1 \uBC14\uC774\uD2B8 \uC218: ${estimateBytes(this.targetCharCount)} \uBC14\uC774\uD2B8`);
     }
   }
   onClose() {
@@ -424,48 +424,75 @@ var ProgressModal = class extends import_obsidian.Modal {
     super(app);
     this.progressText = null;
     this.progressBar = null;
+    this.progressBarFill = null;
     this.progressPercentText = null;
     this.statusText = null;
+    this.studentListContainer = null;
     this.currentIndex = 0;
     this.totalCount = 0;
+    this.completedStudents = [];
   }
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("student-activity-progress-modal");
-    contentEl.createEl("h2", { text: "교사관찰기록 생성 중" });
+    const headerDiv = contentEl.createDiv({ cls: "progress-header" });
+    const iconSpan = headerDiv.createSpan({ cls: "progress-icon" });
+    iconSpan.innerHTML = "\u2728";
+    headerDiv.createEl("h2", { text: "\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uC0DD\uC131 \uC911" });
     this.progressText = contentEl.createEl("p", { cls: "progress-text" });
-    this.progressText.setText("AI 변환 준비 중...");
+    this.progressText.setText("AI \uBCC0\uD658 \uC900\uBE44 \uC911...");
     const progressWrapper = contentEl.createDiv({ cls: "progress-wrapper" });
-    const progressBarContainer = progressWrapper.createDiv({ cls: "progress-bar-container" });
-    this.progressBar = progressBarContainer.createDiv({ cls: "progress-bar" });
-    this.progressBar.style.width = "0%";
-    this.progressPercentText = progressWrapper.createDiv({ cls: "progress-percent" });
+    const circleContainer = progressWrapper.createDiv({ cls: "progress-circle-container" });
+    this.progressPercentText = circleContainer.createDiv({ cls: "progress-circle" });
     this.progressPercentText.setText("0%");
-    this.statusText = contentEl.createEl("p", { cls: "progress-status" });
-    this.statusText.setText("잠시만 기다려주세요...");
+    const barSection = progressWrapper.createDiv({ cls: "progress-bar-section" });
+    const progressBarContainer = barSection.createDiv({ cls: "progress-bar-container" });
+    this.progressBar = progressBarContainer.createDiv({ cls: "progress-bar-bg" });
+    this.progressBarFill = this.progressBar.createDiv({ cls: "progress-bar-fill" });
+    this.progressBarFill.style.width = "0%";
+    this.statusText = barSection.createEl("p", { cls: "progress-status" });
+    this.statusText.setText("\uC7A0\uC2DC\uB9CC \uAE30\uB2E4\uB824\uC8FC\uC138\uC694...");
+    const listSection = contentEl.createDiv({ cls: "progress-list-section" });
+    listSection.createEl("h4", { text: "\u{1F4DD} \uBCC0\uD658 \uC644\uB8CC" });
+    this.studentListContainer = listSection.createDiv({ cls: "progress-student-list" });
     const infoText = contentEl.createEl("p", { cls: "progress-info" });
-    infoText.setText("AI가 학생활동 내용을 교사관찰기록 문체로 변환하고 있습니다.");
+    infoText.innerHTML = "\u{1F916} AI\uAC00 \uD559\uC0DD\uD65C\uB3D9 \uB0B4\uC6A9\uC744 <strong>\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBB38\uCCB4</strong>\uB85C \uBCC0\uD658\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4.";
   }
   updateProgress(current, total, studentName) {
     this.currentIndex = current;
     this.totalCount = total;
     const percentage = Math.round(current / total * 100);
     if (this.progressText) {
-      this.progressText.setText(`${current} / ${total}명 - "${studentName}" 변환 중...`);
+      this.progressText.innerHTML = `<span class="current-student">\u{1F3AF} ${studentName}</span> \uBCC0\uD658 \uC911... <span class="progress-count">(${current}/${total}\uBA85)</span>`;
     }
-    if (this.progressBar) {
-      this.progressBar.style.width = `${percentage}%`;
+    if (this.progressBarFill) {
+      this.progressBarFill.style.width = `${percentage}%`;
+      if (percentage < 30) {
+        this.progressBarFill.style.background = "linear-gradient(90deg, #ff6b6b, #ffa502)";
+      } else if (percentage < 70) {
+        this.progressBarFill.style.background = "linear-gradient(90deg, #ffa502, #2ed573)";
+      } else {
+        this.progressBarFill.style.background = "linear-gradient(90deg, #2ed573, #1e90ff)";
+      }
     }
     if (this.progressPercentText) {
       this.progressPercentText.setText(`${percentage}%`);
+      this.progressPercentText.style.background = `conic-gradient(var(--interactive-accent) ${percentage * 3.6}deg, var(--background-modifier-border) 0deg)`;
     }
     if (this.statusText) {
       if (current === total) {
-        this.statusText.setText("변환 완료! 결과를 저장하고 있습니다...");
+        this.statusText.innerHTML = "\u2705 \uBCC0\uD658 \uC644\uB8CC! \uACB0\uACFC\uB97C \uC800\uC7A5\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4...";
       } else {
-        this.statusText.setText(`남은 학생: ${total - current}명`);
+        const remaining = total - current;
+        const estimatedTime = remaining * 2;
+        this.statusText.innerHTML = `\u23F3 \uB0A8\uC740 \uD559\uC0DD: <strong>${remaining}\uBA85</strong> (\uC608\uC0C1 ${estimatedTime}\uCD08)`;
       }
+    }
+    if (current > 0 && this.studentListContainer) {
+      const studentTag = this.studentListContainer.createSpan({ cls: "completed-student-tag" });
+      studentTag.setText(`\u2713 ${studentName}`);
+      this.studentListContainer.scrollTop = this.studentListContainer.scrollHeight;
     }
   }
   onClose() {
@@ -491,8 +518,8 @@ var StudentActivitySettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h1", { text: "학생활동 → 교사관찰기록 변환 설정" });
-    new import_obsidian.Setting(containerEl).setName("AI 제공자").setDesc("사용할 AI API 제공자를 선택합니다.").addDropdown((dropdown) => {
+    containerEl.createEl("h1", { text: "\uD559\uC0DD\uD65C\uB3D9 \u2192 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uC124\uC815" });
+    new import_obsidian.Setting(containerEl).setName("AI \uC81C\uACF5\uC790").setDesc("\uC0AC\uC6A9\uD560 AI API \uC81C\uACF5\uC790\uB97C \uC120\uD0DD\uD569\uB2C8\uB2E4.").addDropdown((dropdown) => {
       dropdown.addOption("openai", "OpenAI (GPT)");
       dropdown.addOption("claude", "Anthropic (Claude)");
       dropdown.addOption("gemini", "Google (Gemini)");
@@ -511,15 +538,15 @@ var StudentActivitySettingTab = class extends import_obsidian.PluginSettingTab {
       gemini: "AIza...",
       grok: "xai-..."
     };
-    new import_obsidian.Setting(containerEl).setName("API 키").setDesc(`${this.getProviderName(this.plugin.settings.apiProvider)} API 키를 입력합니다.`).addText(
-      (text) => text.setPlaceholder(apiKeyPlaceholders[this.plugin.settings.apiProvider] || "API 키").setValue(this.plugin.settings.apiKey).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("API \uD0A4").setDesc(`${this.getProviderName(this.plugin.settings.apiProvider)} API \uD0A4\uB97C \uC785\uB825\uD569\uB2C8\uB2E4.`).addText(
+      (text) => text.setPlaceholder(apiKeyPlaceholders[this.plugin.settings.apiProvider] || "API \uD0A4").setValue(this.plugin.settings.apiKey).onChange(async (value) => {
         this.plugin.settings.apiKey = value;
         await this.plugin.saveSettings();
       })
     );
     const currentProvider = this.plugin.settings.apiProvider;
     const models = MODEL_OPTIONS[currentProvider] || [];
-    new import_obsidian.Setting(containerEl).setName("모델").setDesc(`${this.getProviderName(currentProvider)}에서 사용할 AI 모델을 선택합니다.`).addDropdown((dropdown) => {
+    new import_obsidian.Setting(containerEl).setName("\uBAA8\uB378").setDesc(`${this.getProviderName(currentProvider)}\uC5D0\uC11C \uC0AC\uC6A9\uD560 AI \uBAA8\uB378\uC744 \uC120\uD0DD\uD569\uB2C8\uB2E4.`).addDropdown((dropdown) => {
       this.modelDropdown = dropdown;
       for (const model of models) {
         dropdown.addOption(model.id, model.name);
@@ -537,7 +564,7 @@ var StudentActivitySettingTab = class extends import_obsidian.PluginSettingTab {
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian.Setting(containerEl).setName("기본 목표 글자 수").setDesc("교사관찰기록의 기본 목표 글자 수를 설정합니다.").addText((text) => {
+    new import_obsidian.Setting(containerEl).setName("\uAE30\uBCF8 \uBAA9\uD45C \uAE00\uC790 \uC218").setDesc("\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC758 \uAE30\uBCF8 \uBAA9\uD45C \uAE00\uC790 \uC218\uB97C \uC124\uC815\uD569\uB2C8\uB2E4.").addText((text) => {
       text.setPlaceholder("500").setValue(String(this.plugin.settings.targetCharCount)).onChange(async (value) => {
         const num = parseInt(value);
         if (!isNaN(num) && num > 0) {
@@ -547,21 +574,21 @@ var StudentActivitySettingTab = class extends import_obsidian.PluginSettingTab {
       });
       text.inputEl.type = "number";
     });
-    new import_obsidian.Setting(containerEl).setName("결과 저장 폴더").setDesc("변환 결과를 저장할 폴더 경로 (비워두면 Vault 루트에 저장)").addText(
-      (text) => text.setPlaceholder("교사관찰기록").setValue(this.plugin.settings.outputFolder).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("\uACB0\uACFC \uC800\uC7A5 \uD3F4\uB354").setDesc("\uBCC0\uD658 \uACB0\uACFC\uB97C \uC800\uC7A5\uD560 \uD3F4\uB354 \uACBD\uB85C (\uBE44\uC6CC\uB450\uBA74 Vault \uB8E8\uD2B8\uC5D0 \uC800\uC7A5)").addText(
+      (text) => text.setPlaceholder("\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D").setValue(this.plugin.settings.outputFolder).onChange(async (value) => {
         this.plugin.settings.outputFolder = value;
         await this.plugin.saveSettings();
       })
     );
-    containerEl.createEl("h2", { text: "NEIS 글자수/바이트수 계산 기준" });
+    containerEl.createEl("h2", { text: "NEIS \uAE00\uC790\uC218/\uBC14\uC774\uD2B8\uC218 \uACC4\uC0B0 \uAE30\uC900" });
     const infoDiv = containerEl.createDiv({ cls: "student-activity-info" });
     infoDiv.innerHTML = `
       <ul>
-        <li><strong>글자 수</strong>: 모든 문자를 1개로 계산 (한글, 영문, 숫자, 공백, 특수문자)</li>
-        <li><strong>바이트 수</strong>:
+        <li><strong>\uAE00\uC790 \uC218</strong>: \uBAA8\uB4E0 \uBB38\uC790\uB97C 1\uAC1C\uB85C \uACC4\uC0B0 (\uD55C\uAE00, \uC601\uBB38, \uC22B\uC790, \uACF5\uBC31, \uD2B9\uC218\uBB38\uC790)</li>
+        <li><strong>\uBC14\uC774\uD2B8 \uC218</strong>:
           <ul>
-            <li>한글, 한자: 3바이트</li>
-            <li>영문, 숫자, 특수문자, 공백, 줄바꿈: 1바이트</li>
+            <li>\uD55C\uAE00, \uD55C\uC790: 3\uBC14\uC774\uD2B8</li>
+            <li>\uC601\uBB38, \uC22B\uC790, \uD2B9\uC218\uBB38\uC790, \uACF5\uBC31, \uC904\uBC14\uAFC8: 1\uBC14\uC774\uD2B8</li>
           </ul>
         </li>
       </ul>
@@ -575,18 +602,18 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
     this.addSettingTab(new StudentActivitySettingTab(this.app, this));
     this.addCommand({
       id: "open-conversion-modal",
-      name: "학생활동 → 교사관찰기록 변환 (Modal)",
+      name: "\uD559\uC0DD\uD65C\uB3D9 \u2192 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 (Modal)",
       callback: () => {
         this.openConversionModal();
       }
     });
     this.addCommand({
       id: "convert-from-selection",
-      name: "선택 영역에서 교사관찰기록 변환",
+      name: "\uC120\uD0DD \uC601\uC5ED\uC5D0\uC11C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658",
       editorCallback: (editor, view) => {
         const selection = editor.getSelection();
         if (!selection.trim()) {
-          new import_obsidian.Notice("텍스트를 선택해주세요.");
+          new import_obsidian.Notice("\uD14D\uC2A4\uD2B8\uB97C \uC120\uD0DD\uD574\uC8FC\uC138\uC694.");
           return;
         }
         this.processConversion(selection, this.settings.targetCharCount);
@@ -595,7 +622,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file) => {
         menu.addItem((item) => {
-          item.setTitle("학생활동 → 교사관찰기록 변환").setIcon("file-text").onClick(() => {
+          item.setTitle("\uD559\uC0DD\uD65C\uB3D9 \u2192 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658").setIcon("file-text").onClick(() => {
             this.openConversionModal();
           });
         });
@@ -613,7 +640,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
   }
   openConversionModal() {
     if (!this.settings.apiKey) {
-      new import_obsidian.Notice("API 키를 설정해주세요. (설정 → 학생활동 → 교사관찰기록 변환)");
+      new import_obsidian.Notice("API \uD0A4\uB97C \uC124\uC815\uD574\uC8FC\uC138\uC694. (\uC124\uC815 \u2192 \uD559\uC0DD\uD65C\uB3D9 \u2192 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658)");
       return;
     }
     new InputModal(this.app, this, (data, charCount) => {
@@ -623,7 +650,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
   async processConversion(data, targetCharCount) {
     const activities = parseTSV(data);
     if (activities.length === 0) {
-      new import_obsidian.Notice("변환할 데이터가 없습니다.");
+      new import_obsidian.Notice("\uBCC0\uD658\uD560 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
       return;
     }
     const progressModal = new ProgressModal(this.app);
@@ -669,7 +696,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
             );
             break;
           default:
-            throw new Error(`지원하지 않는 AI 제공자: ${this.settings.apiProvider}`);
+            throw new Error(`\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 AI \uC81C\uACF5\uC790: ${this.settings.apiProvider}`);
         }
         records.push({
           studentId: activity.studentId,
@@ -686,7 +713,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
           studentId: activity.studentId,
           studentName: activity.studentName,
           activityContent: activity.activityContent,
-          observation: `[변환 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}]`,
+          observation: `[\uBCC0\uD658 \uC2E4\uD328: ${error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958"}]`,
           charCount: 0,
           byteCount: 0
         });
@@ -698,16 +725,16 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
     progressModal.close();
     await this.createResultNote(records);
     if (errorCount > 0) {
-      new import_obsidian.Notice(`변환 완료! (${records.length - errorCount}명 성공, ${errorCount}명 실패)`);
+      new import_obsidian.Notice(`\uBCC0\uD658 \uC644\uB8CC! (${records.length - errorCount}\uBA85 \uC131\uACF5, ${errorCount}\uBA85 \uC2E4\uD328)`);
     } else {
-      new import_obsidian.Notice(`${records.length}명의 교사관찰기록 변환 완료!`);
+      new import_obsidian.Notice(`${records.length}\uBA85\uC758 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uC644\uB8CC!`);
     }
   }
   async createResultNote(records) {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10);
     const timeStr = now.toTimeString().slice(0, 5).replace(":", "");
-    const fileName = `교사관찰기록_${dateStr}_${timeStr}.md`;
+    const fileName = `\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D_${dateStr}_${timeStr}.md`;
     let filePath = fileName;
     if (this.settings.outputFolder) {
       const folder = this.app.vault.getAbstractFileByPath(this.settings.outputFolder);
@@ -716,35 +743,72 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
       }
       filePath = `${this.settings.outputFolder}/${fileName}`;
     }
-    const content = `# 교사관찰기록 변환 결과
+    const tsvData = generateTSVData(records);
+    const encodedTSV = Buffer.from(tsvData).toString("base64");
+    const content = `# \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uACB0\uACFC
 
-생성일시: ${now.toLocaleString("ko-KR")}
-총 인원: ${records.length}명
+\uC0DD\uC131\uC77C\uC2DC: ${now.toLocaleString("ko-KR")}
+\uCD1D \uC778\uC6D0: ${records.length}\uBA85
 
-## 📋 구글 스프레드시트용 복사 영역
+## \u{1F4CB} \uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uB85C \uBCF5\uC0AC
 
-> 아래 코드 블록을 클릭하여 전체 선택 후 복사(Ctrl+C)하세요.
-> 구글 스프레드시트에 붙여넣기(Ctrl+V)하면 열이 자동으로 구분됩니다.
+<div class="student-activity-copy-section">
+<button class="student-activity-copy-btn" data-tsv="${encodedTSV}">
+\u{1F4CB} \uD074\uB9AD\uD558\uC5EC \uBCF5\uC0AC\uD558\uAE30
+</button>
+<span class="copy-status"></span>
+</div>
 
-\`\`\`tsv
-${generateTSVData(records)}\`\`\`
+> \uC704 \uBC84\uD2BC\uC744 \uD074\uB9AD\uD558\uBA74 TSV \uB370\uC774\uD130\uAC00 \uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uBCF5\uC0AC\uB429\uB2C8\uB2E4.
+> \uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uC5D0\uC11C Ctrl+V\uB85C \uBD99\uC5EC\uB123\uC73C\uBA74 \uC5F4\uC774 \uC790\uB3D9\uC73C\uB85C \uAD6C\uBD84\uB429\uB2C8\uB2E4.
 
 ---
 
-## 결과 테이블
+## \uACB0\uACFC \uD14C\uC774\uBE14
 
 ${generateMarkdownTable(records)}
 
-## 통계
+## \uD1B5\uACC4
 
-| 항목 | 값 |
+| \uD56D\uBAA9 | \uAC12 |
 |------|-----|
-| 총 인원 | ${records.length}명 |
-| 평균 글자 수 | ${Math.round(records.reduce((sum, r) => sum + r.charCount, 0) / records.length)}자 |
-| 평균 바이트 수 | ${Math.round(records.reduce((sum, r) => sum + r.byteCount, 0) / records.length)} 바이트 |
+| \uCD1D \uC778\uC6D0 | ${records.length}\uBA85 |
+| \uD3C9\uADE0 \uAE00\uC790 \uC218 | ${Math.round(records.reduce((sum, r) => sum + r.charCount, 0) / records.length)}\uC790 |
+| \uD3C9\uADE0 \uBC14\uC774\uD2B8 \uC218 | ${Math.round(records.reduce((sum, r) => sum + r.byteCount, 0) / records.length)} \uBC14\uC774\uD2B8 |
 `;
     const file = await this.app.vault.create(filePath, content);
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(file);
+    this.registerCopyButtonHandler();
+  }
+  registerCopyButtonHandler() {
+    setTimeout(() => {
+      const copyButtons = document.querySelectorAll(".student-activity-copy-btn");
+      copyButtons.forEach((btn) => {
+        if (btn.hasAttribute("data-listener-attached"))
+          return;
+        btn.setAttribute("data-listener-attached", "true");
+        btn.addEventListener("click", async (e) => {
+          const button = e.target;
+          const encodedTSV = button.getAttribute("data-tsv");
+          if (!encodedTSV)
+            return;
+          try {
+            const tsvData = Buffer.from(encodedTSV, "base64").toString("utf-8");
+            await navigator.clipboard.writeText(tsvData);
+            const originalText = button.textContent;
+            button.textContent = "\u2705 \uBCF5\uC0AC \uC644\uB8CC!";
+            button.classList.add("copied");
+            new import_obsidian.Notice("\u{1F4CB} \uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uBCF5\uC0AC\uB418\uC5C8\uC2B5\uB2C8\uB2E4! \uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uC5D0 \uBD99\uC5EC\uB123\uAE30(Ctrl+V)\uD558\uC138\uC694.");
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.classList.remove("copied");
+            }, 2e3);
+          } catch (error) {
+            new import_obsidian.Notice("\uBCF5\uC0AC \uC2E4\uD328: " + (error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958"));
+          }
+        });
+      });
+    }, 500);
   }
 };
