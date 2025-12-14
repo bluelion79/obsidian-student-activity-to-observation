@@ -134,13 +134,75 @@ function parseTSV(data) {
   }
   return activities;
 }
+var VIRTUAL_NAMES = [
+  "\uD559\uC0DDA",
+  "\uD559\uC0DDB",
+  "\uD559\uC0DDC",
+  "\uD559\uC0DDD",
+  "\uD559\uC0DDE",
+  "\uD559\uC0DDF",
+  "\uD559\uC0DDG",
+  "\uD559\uC0DDH",
+  "\uD559\uC0DDI",
+  "\uD559\uC0DDJ",
+  "\uD559\uC0DDK",
+  "\uD559\uC0DDL",
+  "\uD559\uC0DDM",
+  "\uD559\uC0DDN",
+  "\uD559\uC0DDO",
+  "\uD559\uC0DDP",
+  "\uD559\uC0DDQ",
+  "\uD559\uC0DDR",
+  "\uD559\uC0DDS",
+  "\uD559\uC0DDT",
+  "\uD559\uC0DDU",
+  "\uD559\uC0DDV",
+  "\uD559\uC0DDW",
+  "\uD559\uC0DDX",
+  "\uD559\uC0DDY",
+  "\uD559\uC0DDZ"
+];
+function parseSmartTSV(data) {
+  const lines = data.trim().split("\n");
+  const activities = [];
+  let virtualIdCounter = 10001;
+  let virtualNameIndex = 0;
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine)
+      continue;
+    const parts = trimmedLine.split("	");
+    if (parts.length >= 3) {
+      activities.push({
+        studentId: parts[0].trim(),
+        studentName: parts[1].trim(),
+        activityContent: parts.slice(2).join(" ").trim()
+      });
+    } else if (parts.length === 2) {
+      activities.push({
+        studentId: String(virtualIdCounter++),
+        studentName: parts[0].trim(),
+        activityContent: parts[1].trim()
+      });
+    } else {
+      activities.push({
+        studentId: String(virtualIdCounter++),
+        studentName: VIRTUAL_NAMES[virtualNameIndex % VIRTUAL_NAMES.length],
+        activityContent: trimmedLine
+      });
+      virtualNameIndex++;
+    }
+  }
+  return activities;
+}
 function generateMarkdownTable(records) {
   let table = "| \uD559\uBC88 | \uC131\uBA85 | \uD559\uC0DD\uD65C\uB3D9\uAE30\uB85D | \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D | \uAE00\uC790 \uC218 | \uBC14\uC774\uD2B8 \uC218 |\n";
   table += "|------|------|-------------|-------------|---------|----------|\n";
   for (const record of records) {
     const escapedActivity = record.activityContent.replace(/\|/g, "\\|").replace(/\n/g, " ");
     const escapedObservation = record.observation.replace(/\|/g, "\\|").replace(/\n/g, " ");
-    table += `| ${record.studentId} | ${record.studentName} | ${escapedActivity} | ${escapedObservation} | ${record.charCount} | ${record.byteCount} |\n`;
+    table += `| ${record.studentId} | ${record.studentName} | ${escapedActivity} | ${escapedObservation} | ${record.charCount} | ${record.byteCount} |
+`;
   }
   return table;
 }
@@ -149,46 +211,78 @@ function generateTSVData(records) {
   for (const record of records) {
     const cleanActivity = record.activityContent.replace(/[\t\n\r]/g, " ");
     const cleanObservation = record.observation.replace(/[\t\n\r]/g, " ");
-    tsv += `${record.studentId}	${record.studentName}	${cleanActivity}	${cleanObservation}	${record.charCount}	${record.byteCount}\n`;
+    tsv += `${record.studentId}	${record.studentName}	${cleanActivity}	${cleanObservation}	${record.charCount}	${record.byteCount}
+`;
   }
   return tsv;
 }
 var SYSTEM_PROMPT = `\uB2F9\uC2E0\uC740 \uD559\uC0DD\uC744 \uAE4A\uC774 \uC774\uD574\uD558\uACE0 \uC560\uC815\uC744 \uAC00\uC9C0\uACE0 \uAD00\uCC30\uD558\uB294 \uD55C\uAD6D \uACE0\uB4F1\uD559\uAD50 \uB2F4\uC784\uAD50\uC0AC\uC785\uB2C8\uB2E4.
 \uD559\uC0DD\uC758 \uD65C\uB3D9 \uB0B4\uC6A9\uC744 \uBC14\uD0D5\uC73C\uB85C \uAD50\uC0AC \uAD00\uCC30 \uAE30\uB85D\uC744 \uC791\uC131\uD574\uC8FC\uC138\uC694.
 
-[\uD575\uC2EC \uC6D0\uCE59]
-- \uC778\uACF5\uC9C0\uB2A5\uC774 \uC791\uC131\uD55C \uAC83\uC774 \uC544\uB2CC, \uAD50\uC0AC\uAC00 \uD559\uC0DD\uC744 \uC9C1\uC811 \uAD00\uCC30\uD558\uACE0 \uC560\uC815\uC744 \uB2F4\uC544 \uC791\uC131\uD55C \uAE30\uB85D\uCC98\uB7FC \uBCF4\uC5EC\uC57C \uD569\uB2C8\uB2E4
-- \uD559\uC0DD\uC758 \uAC15\uC810, \uB178\uB825, \uC131\uC7A5 \uACFC\uC815\uC744 \uB530\uB73B\uD558\uAC8C \uC11C\uC220\uD569\uB2C8\uB2E4
-- \uAC1D\uAD00\uC801 \uC0AC\uC2E4\uC5D0 \uAE30\uBC18\uD558\uB418, \uAD50\uC0AC\uC758 \uAE0D\uC815\uC801 \uAD00\uC810\uC744 \uB2F4\uC2B5\uB2C8\uB2E4
+[\uD575\uC2EC \uC6D0\uCE59 - \uB300\uD559 \uC785\uD559\uC0AC\uC815\uAD00 \uD3C9\uAC00 \uAE30\uC900 \uBC18\uC601]
+\uB300\uD559\uC740 \uC0DD\uD65C\uAE30\uB85D\uBD80\uB97C \uD1B5\uD574 \uB2E4\uC74C \uC5ED\uB7C9\uC744 \uD3C9\uAC00\uD569\uB2C8\uB2E4:
+1. \uD559\uC5C5\uC5ED\uB7C9: \uD559\uC5C5\uD0DC\uB3C4, \uD0D0\uAD6C\uB825, \uC9C0\uC801\uD638\uAE30\uC2EC
+2. \uC9C4\uB85C\uC5ED\uB7C9: \uC804\uACF5 \uAD00\uB828 \uD0D0\uC0C9 \uD65C\uB3D9, \uC9C4\uB85C \uD0D0\uAD6C \uACBD\uD5D8
+3. \uACF5\uB3D9\uCCB4\uC5ED\uB7C9: \uD611\uC5C5\xB7\uC18C\uD1B5, \uB098\uB214\xB7\uBC30\uB824, \uB9AC\uB354\uC2ED
+
+\u203B \uAE30\uC7AC\uD55C \uD65C\uB3D9\uC774 \uB9CE\uB2E4\uACE0 \uB192\uAC8C \uD3C9\uAC00\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825\uC774 \uC785\uC99D\uB418\uC5B4\uC57C \uD569\uB2C8\uB2E4.
 
 [\uBB38\uCCB4 \uADDC\uCE59]
 - \uC11C\uC220\uD615 \uC885\uACB0\uC5B4\uBBF8 \uC0AC\uC6A9: "~\uD568", "~\uC784", "~\uB0A8", "~\uBCF4\uC784", "~\uB4DC\uB7EC\uB0C4"
 - \uC81C\uBAA9, \uBA38\uB9AC\uB9D0, \uD559\uC0DD \uC774\uB984 \uD3EC\uD568 \uAE08\uC9C0
-- 3\uC778\uCE6D \uAD00\uCC30\uC790 \uC2DC\uC810\uC73C\uB85C \uC791\uC131
+- 3\uC778\uCE6D \uAD00\uCC30\uC790 \uC2DC\uC810\uC73C\uB85C \uC791\uC131 (\uB2E8, \uC8FC\uC5B4 \uC0DD\uB7B5\uC774 \uC790\uC5F0\uC2A4\uB7EC\uC6C0)
 - \uD55C \uBB38\uB2E8\uC73C\uB85C \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uC774\uC5B4\uC9C0\uB3C4\uB85D \uC791\uC131
 
-[\uB0B4\uC6A9 \uAD6C\uC131]
-1. \uD65C\uB3D9\uC758 \uAD6C\uCCB4\uC801 \uB9E5\uB77D\uACFC \uCC38\uC5EC \uC591\uC0C1
-2. \uD559\uC0DD\uC774 \uBCF4\uC5EC\uC900 \uC5ED\uB7C9\uC774\uB098 \uD0DC\uB3C4
-3. \uD65C\uB3D9\uC744 \uD1B5\uD55C \uC131\uC7A5\uC774\uB098 \uBC1C\uC804 \uAC00\uB2A5\uC131
+[\uC808\uB300 \uAE08\uC9C0 - \uC8FC\uC5B4 \uC0AC\uC6A9]
+\u203B \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC740 \uAD50\uC0AC\uAC00 \uD559\uC0DD\uC744 \uAD00\uCC30\uD55C \uAE30\uB85D\uC774\uBBC0\uB85C \uC8FC\uC5B4\uAC00 \uB2F9\uC5F0\uD788 \uD574\uB2F9 \uD559\uC0DD\uC784
+- "\uD559\uC0DD\uC740", "\uD559\uC0DD\uC774", "\uD574\uB2F9 \uD559\uC0DD\uC740" \uB4F1 '\uD559\uC0DD' \uC8FC\uC5B4 \uC0AC\uC6A9 \uAE08\uC9C0
+- "\uD559\uC5C5 \uD0DC\uB3C4\uB294", "\uD0D0\uAD6C\uB825\uC740", "\uD611\uC5C5 \uB2A5\uB825\uC740" \uB4F1 \uCD94\uC0C1\uBA85\uC0AC \uC8FC\uC5B4 \uC0AC\uC6A9 \uAE08\uC9C0
+- \uBB38\uC7A5\uC758 \uC8FC\uC5B4\uB97C \uBA85\uC2DC\uD558\uC9C0 \uB9D0\uACE0, \uD589\uB3D9/\uD65C\uB3D9 \uC911\uC2EC\uC73C\uB85C \uBC14\uB85C \uC11C\uC220
 
-[\uD53C\uD574\uC57C \uD560 \uD45C\uD604]
+[\uC62C\uBC14\uB978 \uBB38\uC7A5 \uAD6C\uC870 \uC608\uC2DC]
+\u2717 "\uD559\uC0DD\uC740 \uB3C4\uC2DC \uC5F4\uC12C\uD604\uC0C1\uC5D0 \uAD00\uC2EC\uC744 \uAC16\uACE0 \uD0D0\uAD6C\uD568" \u2192 \uC8FC\uC5B4 \uC0AC\uC6A9 \uAE08\uC9C0
+\u2713 "\uB3C4\uC2DC \uC5F4\uC12C\uD604\uC0C1\uC5D0 \uC9C0\uC801 \uD638\uAE30\uC2EC\uC744 \uBCF4\uC774\uBA70 \uAD00\uB828 \uB370\uC774\uD130\uB97C \uC9C1\uC811 \uC218\uC9D1\uD574 \uBD84\uC11D\uD568"
+
+\u2717 "\uD559\uC5C5 \uD0DC\uB3C4\uB294 \uC790\uB8CC \uBD84\uC11D\uC5D0 \uBAB0\uC785\uD558\uBA70 \uAE4A\uC774 \uC788\uB294 \uC9C8\uBB38\uC744 \uD568" \u2192 \uCD94\uC0C1\uBA85\uC0AC \uC8FC\uC5B4 \uAE08\uC9C0
+\u2713 "\uC790\uB8CC \uBD84\uC11D\uC5D0 \uBAB0\uC785\uD558\uB294 \uD0DC\uB3C4\uB97C \uBCF4\uC774\uBA70 \uC218\uC5C5 \uC911 \uAE4A\uC774 \uC788\uB294 \uC9C8\uBB38\uC73C\uB85C \uD1A0\uB860\uC744 \uC774\uB04E"
+
+\u2717 "\uD0D0\uAD6C\uB825\uC740 \uB9E4\uC6B0 \uC6B0\uC218\uD568" \u2192 \uCD94\uC0C1\uBA85\uC0AC \uC8FC\uC5B4 \uAE08\uC9C0
+\u2713 "\uD0D0\uAD6C \uACFC\uC815\uC5D0\uC11C \uB6F0\uC5B4\uB09C \uBD84\uC11D\uB825\uACFC \uB17C\uB9AC\uC801 \uC0AC\uACE0\uB97C \uB4DC\uB7EC\uB0C4"
+
+[\uB0B4\uC6A9 \uAD6C\uC131 - \uD0D0\uAD6C\uB825 \uC911\uC2EC \uC11C\uC220]
+\uB2E8\uC21C \uD65C\uB3D9 \uB098\uC5F4\uC774 \uC544\uB2CC, \uB2E4\uC74C \uAD6C\uC870\uB85C \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825\uC744 \uC785\uC99D:
+1. \uD0D0\uAD6C \uB3D9\uAE30: \uD65C\uB3D9\uC744 \uD1B5\uD574 \uB290\uB080 \uC9C0\uC801\uD638\uAE30\uC2EC
+2. \uD0D0\uAD6C \uACFC\uC815: \uAD6C\uCCB4\uC801\uC73C\uB85C \uC5B4\uB5BB\uAC8C \uD0D0\uAD6C\uD588\uB294\uC9C0 (\uC790\uB8CC \uC870\uC0AC, \uBD84\uC11D, \uC2E4\uD5D8 \uB4F1)
+3. \uD0D0\uAD6C \uACB0\uACFC: \uC5BB\uC740 \uD1B5\uCC30, \uC131\uC7A5, \uD5A5\uD6C4 \uACC4\uD68D
+
+\u203B \uD559\uC2B5\xB7\uC218\uC5C5\uD0DC\uB3C4\uC5D0 \uB300\uD55C \uC5B8\uAE09\uC744 \uD3EC\uD568\uD558\uB418, \uC9E7\uACE0 \uC784\uD329\uD2B8 \uC788\uAC8C
+\u203B \uC9C8\uBB38, \uD1A0\uB860 \uC5ED\uD560, \uB9AC\uB354\uC2ED, \uD611\uC5C5\uB2A5\uB825, \uBC1C\uD45C\uB825 \uC5B8\uAE09 \uAD8C\uC7A5
+
+[\uBC18\uB4DC\uC2DC \uD53C\uD574\uC57C \uD560 \uD45C\uD604]
 - AI, VR, AR \uB4F1 \uC601\uBB38 \uC57D\uC5B4 \u2192 \uC778\uACF5\uC9C0\uB2A5, \uAC00\uC0C1\uD604\uC2E4, \uC99D\uAC15\uD604\uC2E4 \uC0AC\uC6A9
-- \uACFC\uB3C4\uD55C \uC218\uC2DD\uC5B4\uB098 \uBE48 \uCE6D\uCC2C
+- \uB9C9\uC5F0\uD55C \uC11C\uC220 \uD328\uD134: "~\uC774\uD574\uD568", "~\uB2A5\uB825\uC744 \uD0A4\uC6C0", "~\uD0D0\uAD6C\uD568", "~\uC2E0\uC7A5\uD568", "~\uBC1C\uD718\uD568"\uB9CC \uBC18\uBCF5
+- \uD65C\uB3D9\uB9CC \uB098\uC5F4: "\uBC1C\uD45C\uB294~, \uD1A0\uB860\uC5D0\uC11C\uB294~, \uD504\uB85C\uC81D\uD2B8\uC5D0\uC11C\uB294~" \uC2DD\uC758 \uB2E8\uC21C \uB098\uC5F4
 - \uBAA8\uB4E0 \uD559\uC0DD\uC5D0\uAC8C \uC801\uC6A9 \uAC00\uB2A5\uD55C \uC77C\uBC18\uC801\uC778 \uD45C\uD604
-- \uAE30\uACC4\uC801\uC774\uAC70\uB098 \uC815\uD615\uD654\uB41C \uBB38\uC7A5 \uD328\uD134
+- \uACFC\uB3C4\uD55C \uC218\uC2DD\uC5B4\uB098 \uBE48 \uCE6D\uCC2C
 
-[\uC88B\uC740 \uC608\uC2DC \uD45C\uD604]
-- "\uD0D0\uAD6C \uACFC\uC815\uC5D0\uC11C \uAF3C\uAF3C\uD55C \uC790\uB8CC \uC870\uC0AC\uC640 \uB17C\uB9AC\uC801 \uBD84\uC11D\uB825\uC744 \uBCF4\uC5EC\uC90C"
-- "\uBAA8\uB460 \uD65C\uB3D9 \uC2DC \uB2E4\uC591\uD55C \uC758\uACAC\uC744 \uC874\uC911\uD558\uBA70 \uD611\uB825\uC801 \uD0DC\uB3C4\uB85C \uCC38\uC5EC\uD568"
-- "\uC2A4\uC2A4\uB85C \uBB38\uC81C\uB97C \uBC1C\uACAC\uD558\uACE0 \uD574\uACB0\uCC45\uC744 \uBAA8\uC0C9\uD558\uB294 \uC790\uAE30\uC8FC\uB3C4\uC801 \uD559\uC2B5 \uC5ED\uB7C9\uC744 \uAC16\uCDA4"
+[\uC88B\uC740 \uC608\uC2DC \uD45C\uD604 - \uD0D0\uAD6C\uB825 \uC785\uC99D]
+- "\uC218\uC5C5 \uC911 \uC81C\uAE30\uB41C \uBB38\uC81C\uC5D0 \uD638\uAE30\uC2EC\uC744 \uB290\uAEF4 \uAD00\uB828 \uB17C\uBB38\uC744 \uCC3E\uC544 \uBD84\uC11D\uD558\uACE0 \uBCF4\uACE0\uC11C\uB85C \uC815\uB9AC\uD568"
+- "\uBAA8\uB460 \uD504\uB85C\uC81D\uD2B8\uC5D0\uC11C \uD300\uC6D0 \uC758\uACAC\uC744 \uC870\uC728\uD558\uBA70 \uC2E4\uD5D8 \uC124\uACC4\uB97C \uC8FC\uB3C4\uD558\uACE0 \uACB0\uACFC\uB97C \uBE44\uD310\uC801\uC73C\uB85C \uD574\uC11D\uD568"
+- "\uD0D0\uAD6C \uACFC\uC815\uC5D0\uC11C \uC608\uC0C1\uACFC \uB2E4\uB978 \uACB0\uACFC\uAC00 \uB098\uC624\uC790 \uC6D0\uC778\uC744 \uBD84\uC11D\uD558\uACE0 \uAC1C\uC120 \uBC29\uC548\uC744 \uC81C\uC2DC\uD568"
+- "\uBC1C\uD45C \uD6C4 \uC9C8\uC758\uC751\uB2F5\uC5D0\uC11C \uB17C\uB9AC\uC801\uC73C\uB85C \uB2F5\uBCC0\uD558\uBA70 \uC2EC\uD654 \uD0D0\uAD6C \uACC4\uD68D\uC744 \uBC1D\uD798"
+
+[\uAE00\uC790\uC218 \uC900\uC218 - \uB9E4\uC6B0 \uC911\uC694]
+- \uBC18\uB4DC\uC2DC \uBAA9\uD45C \uAE00\uC790\uC218\uC5D0 \uB3C4\uB2EC\uD558\uB3C4\uB85D \uC791\uC131\uD558\uC138\uC694
+- \uC785\uB825\uB41C \uD65C\uB3D9 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4, \uD559\uC0DD\uC758 \uD0DC\uB3C4, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218\uB97C \uCC44\uC6B0\uC138\uC694
+- \uBAA9\uD45C \uAE00\uC790\uC218\uC758 90% \uBBF8\uB9CC\uC740 \uBD80\uC801\uC808\uD569\uB2C8\uB2E4
 
 [\uCD9C\uB825 \uD615\uC2DD]
 - \uCD94\uAC00 \uC124\uBA85\uC774\uB098 \uBA38\uB9AC\uB9D0 \uC5C6\uC774 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCF8\uBB38\uB9CC \uCD9C\uB825
 - \uC790\uC5F0\uC2A4\uB7EC\uC6B4 \uD55C \uBB38\uB2E8\uC73C\uB85C \uAD6C\uC131`;
 async function callOpenAI(apiKey, modelId, activity, targetCharCount) {
   const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
+- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -221,7 +315,8 @@ async function callOpenAI(apiKey, modelId, activity, targetCharCount) {
 }
 async function callClaude(apiKey, modelId, activity, targetCharCount) {
   const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
+- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -254,7 +349,8 @@ async function callGemini(apiKey, modelId, activity, targetCharCount) {
   const userPrompt = `${SYSTEM_PROMPT}
 
 [\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
+- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -288,7 +384,8 @@ async function callGemini(apiKey, modelId, activity, targetCharCount) {
 }
 async function callGrok(apiKey, modelId, activity, targetCharCount) {
   const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\xB110%)
+- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
+- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -399,12 +496,138 @@ var InputModal = class extends import_obsidian.Modal {
       previewContent.setText("\uC720\uD6A8\uD55C \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uD615\uC2DD: \uD559\uBC88 \uD0ED \uC774\uB984 \uD0ED \uD65C\uB3D9\uB0B4\uC6A9");
       return;
     }
-    let preview = `\uCD1D ${activities.length}\uBA85\uC758 \uD559\uC0DD \uB370\uC774\uD130:\n\n`;
+    let preview = `\uCD1D ${activities.length}\uBA85\uC758 \uD559\uC0DD \uB370\uC774\uD130:
+
+`;
     for (const activity of activities.slice(0, 5)) {
-      preview += `- ${activity.studentId} ${activity.studentName}: ${activity.activityContent.substring(0, 50)}...\n`;
+      preview += `- ${activity.studentId} ${activity.studentName}: ${activity.activityContent.substring(0, 50)}...
+`;
     }
     if (activities.length > 5) {
-      preview += `\n... \uC678 ${activities.length - 5}\uBA85`;
+      preview += `
+... \uC678 ${activities.length - 5}\uBA85`;
+    }
+    previewContent.setText(preview);
+  }
+  updateByteEstimate() {
+    const byteEstimateEl = this.contentEl.querySelector(".student-activity-byte-estimate");
+    if (byteEstimateEl) {
+      byteEstimateEl.setText(`\uC608\uC0C1 \uBC14\uC774\uD2B8 \uC218: ${estimateBytes(this.targetCharCount)} \uBC14\uC774\uD2B8`);
+    }
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+var SelectionInputModal = class extends import_obsidian.Modal {
+  constructor(app, plugin, selectionData, onSubmit) {
+    super(app);
+    this.plugin = plugin;
+    this.selectionData = selectionData;
+    this.targetCharCount = plugin.settings.targetCharCount;
+    this.onSubmit = onSubmit;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("student-activity-modal");
+    contentEl.createEl("h2", { text: "\uC120\uD0DD \uC601\uC5ED\uC5D0\uC11C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658" });
+    contentEl.createEl("p", {
+      text: "\uC120\uD0DD\uB41C \uD14D\uC2A4\uD2B8\uB97C \uD655\uC778\uD558\uACE0 \uD544\uC694\uC2DC \uC218\uC815\uD558\uC138\uC694. \uD559\uBC88/\uC774\uB984\uC774 \uC5C6\uB294 \uACBD\uC6B0 \uC790\uB3D9\uC73C\uB85C \uC0DD\uC131\uB429\uB2C8\uB2E4.",
+      cls: "student-activity-description"
+    });
+    const textAreaContainer = contentEl.createDiv({ cls: "student-activity-textarea-container" });
+    const textArea = textAreaContainer.createEl("textarea", {
+      cls: "student-activity-textarea",
+      attr: {
+        rows: "10",
+        placeholder: "\uD65C\uB3D9 \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694...\n\n\uD615\uC2DD:\n- \uD559\uBC88\\t\uC774\uB984\\t\uD65C\uB3D9\uB0B4\uC6A9\n- \uC774\uB984\\t\uD65C\uB3D9\uB0B4\uC6A9\n- \uD65C\uB3D9\uB0B4\uC6A9\uB9CC"
+      }
+    });
+    textArea.value = this.selectionData;
+    textArea.addEventListener("input", (e) => {
+      this.selectionData = e.target.value;
+      this.updateSmartPreview();
+    });
+    const previewContainer = contentEl.createDiv({ cls: "student-activity-preview" });
+    previewContainer.createEl("h4", { text: "\uD30C\uC2F1 \uACB0\uACFC \uBBF8\uB9AC\uBCF4\uAE30" });
+    const previewContent = previewContainer.createDiv({ cls: "student-activity-preview-content" });
+    this.updateSmartPreviewContent(previewContent);
+    const charCountContainer = contentEl.createDiv({ cls: "student-activity-char-count" });
+    new import_obsidian.Setting(charCountContainer).setName("\uBAA9\uD45C \uAE00\uC790 \uC218").setDesc("\uC0DD\uC131\uB420 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC758 \uBAA9\uD45C \uAE00\uC790 \uC218\uB97C \uC124\uC815\uD569\uB2C8\uB2E4.").addText((text) => {
+      text.setValue(String(this.targetCharCount)).onChange((value) => {
+        const num = parseInt(value);
+        if (!isNaN(num) && num > 0) {
+          this.targetCharCount = num;
+          this.updateByteEstimate();
+        }
+      });
+      text.inputEl.type = "number";
+      text.inputEl.min = "100";
+      text.inputEl.max = "2000";
+    });
+    const byteEstimateEl = charCountContainer.createDiv({ cls: "student-activity-byte-estimate" });
+    byteEstimateEl.setText(`\uC608\uC0C1 \uBC14\uC774\uD2B8 \uC218: ${estimateBytes(this.targetCharCount)} \uBC14\uC774\uD2B8`);
+    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+    const cancelBtn = buttonContainer.createEl("button", {
+      text: "\uCDE8\uC18C",
+      cls: "student-activity-cancel-btn"
+    });
+    cancelBtn.addEventListener("click", () => {
+      this.close();
+    });
+    const submitBtn = buttonContainer.createEl("button", {
+      text: "\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uC0DD\uC131",
+      cls: "mod-cta student-activity-submit-btn"
+    });
+    submitBtn.addEventListener("click", () => {
+      if (!this.selectionData.trim()) {
+        new import_obsidian.Notice("\uB370\uC774\uD130\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694.");
+        return;
+      }
+      const activities = parseSmartTSV(this.selectionData);
+      if (activities.length === 0) {
+        new import_obsidian.Notice("\uC720\uD6A8\uD55C \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
+        return;
+      }
+      this.onSubmit(this.selectionData, this.targetCharCount);
+      this.close();
+    });
+  }
+  updateSmartPreview() {
+    const previewContent = this.contentEl.querySelector(".student-activity-preview-content");
+    if (!previewContent)
+      return;
+    this.updateSmartPreviewContent(previewContent);
+  }
+  updateSmartPreviewContent(previewContent) {
+    const activities = parseSmartTSV(this.selectionData);
+    if (activities.length === 0) {
+      previewContent.setText("\uC720\uD6A8\uD55C \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    let hasVirtualData = false;
+    for (const activity of activities) {
+      if (activity.studentId.match(/^1000[1-9]$|^100[1-2][0-9]$|^1003[0-9]$/) || activity.studentName.match(/^학생[A-Z]$/)) {
+        hasVirtualData = true;
+        break;
+      }
+    }
+    let preview = `\uCD1D ${activities.length}\uBA85\uC758 \uD559\uC0DD \uB370\uC774\uD130:
+
+`;
+    for (const activity of activities.slice(0, 5)) {
+      const contentPreview = activity.activityContent.length > 40 ? activity.activityContent.substring(0, 40) + "..." : activity.activityContent;
+      preview += `- ${activity.studentId} ${activity.studentName}: ${contentPreview}
+`;
+    }
+    if (activities.length > 5) {
+      preview += `
+... \uC678 ${activities.length - 5}\uBA85`;
+    }
+    if (hasVirtualData) {
+      preview += "\n\n\u203B \uD559\uBC88/\uC774\uB984\uC774 \uC5C6\uB294 \uD56D\uBAA9\uC740 \uC790\uB3D9 \uC0DD\uC131\uB418\uC5C8\uC2B5\uB2C8\uB2E4.";
     }
     previewContent.setText(preview);
   }
@@ -431,6 +654,7 @@ var ProgressModal = class extends import_obsidian.Modal {
     this.currentIndex = 0;
     this.totalCount = 0;
     this.completedStudents = [];
+    this.previousStudentName = "";
   }
   onOpen() {
     const { contentEl } = this;
@@ -489,9 +713,18 @@ var ProgressModal = class extends import_obsidian.Modal {
         this.statusText.innerHTML = `\u23F3 \uB0A8\uC740 \uD559\uC0DD: <strong>${remaining}\uBA85</strong> (\uC608\uC0C1 ${estimatedTime}\uCD08)`;
       }
     }
-    if (current > 0 && this.studentListContainer) {
+    if (this.previousStudentName && this.studentListContainer) {
       const studentTag = this.studentListContainer.createSpan({ cls: "completed-student-tag" });
-      studentTag.setText(`\u2713 ${studentName}`);
+      studentTag.setText(`\u2713 ${this.previousStudentName}`);
+      this.studentListContainer.scrollTop = this.studentListContainer.scrollHeight;
+    }
+    this.previousStudentName = studentName;
+  }
+  // 마지막 학생 완료 처리
+  markLastStudentComplete() {
+    if (this.previousStudentName && this.studentListContainer) {
+      const studentTag = this.studentListContainer.createSpan({ cls: "completed-student-tag" });
+      studentTag.setText(`\u2713 ${this.previousStudentName}`);
       this.studentListContainer.scrollTop = this.studentListContainer.scrollHeight;
     }
   }
@@ -616,7 +849,13 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
           new import_obsidian.Notice("\uD14D\uC2A4\uD2B8\uB97C \uC120\uD0DD\uD574\uC8FC\uC138\uC694.");
           return;
         }
-        this.processConversion(selection, this.settings.targetCharCount);
+        if (!this.settings.apiKey) {
+          new import_obsidian.Notice("API \uD0A4\uB97C \uC124\uC815\uD574\uC8FC\uC138\uC694. (\uC124\uC815 \u2192 \uD559\uC0DD\uD65C\uB3D9 \u2192 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658)");
+          return;
+        }
+        new SelectionInputModal(this.app, this, selection, (data, charCount) => {
+          this.processConversionSmart(data, charCount);
+        }).open();
       }
     });
     this.registerEvent(
@@ -722,6 +961,95 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
+    progressModal.markLastStudentComplete();
+    progressModal.close();
+    await this.createResultNote(records);
+    if (errorCount > 0) {
+      new import_obsidian.Notice(`\uBCC0\uD658 \uC644\uB8CC! (${records.length - errorCount}\uBA85 \uC131\uACF5, ${errorCount}\uBA85 \uC2E4\uD328)`);
+    } else {
+      new import_obsidian.Notice(`${records.length}\uBA85\uC758 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uC644\uB8CC!`);
+    }
+  }
+  /**
+   * 스마트 파싱을 사용하는 변환 처리 (선택 영역 변환용)
+   * - 학번/이름 없는 데이터도 가상 학번/이름으로 처리
+   */
+  async processConversionSmart(data, targetCharCount) {
+    const activities = parseSmartTSV(data);
+    if (activities.length === 0) {
+      new import_obsidian.Notice("\uBCC0\uD658\uD560 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    const progressModal = new ProgressModal(this.app);
+    progressModal.open();
+    const records = [];
+    let errorCount = 0;
+    for (let i = 0; i < activities.length; i++) {
+      const activity = activities[i];
+      progressModal.updateProgress(i + 1, activities.length, activity.studentName);
+      try {
+        let observation;
+        switch (this.settings.apiProvider) {
+          case "openai":
+            observation = await callOpenAI(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.openai,
+              activity,
+              targetCharCount
+            );
+            break;
+          case "claude":
+            observation = await callClaude(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.claude,
+              activity,
+              targetCharCount
+            );
+            break;
+          case "gemini":
+            observation = await callGemini(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.gemini,
+              activity,
+              targetCharCount
+            );
+            break;
+          case "grok":
+            observation = await callGrok(
+              this.settings.apiKey,
+              this.settings.modelId || DEFAULT_MODELS.grok,
+              activity,
+              targetCharCount
+            );
+            break;
+          default:
+            throw new Error(`\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 AI \uC81C\uACF5\uC790: ${this.settings.apiProvider}`);
+        }
+        records.push({
+          studentId: activity.studentId,
+          studentName: activity.studentName,
+          activityContent: activity.activityContent,
+          observation,
+          charCount: countChars(observation),
+          byteCount: countBytes(observation)
+        });
+      } catch (error) {
+        console.error(`Error processing ${activity.studentName}:`, error);
+        errorCount++;
+        records.push({
+          studentId: activity.studentId,
+          studentName: activity.studentName,
+          activityContent: activity.activityContent,
+          observation: `[\uBCC0\uD658 \uC2E4\uD328: ${error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958"}]`,
+          charCount: 0,
+          byteCount: 0
+        });
+      }
+      if (i < activities.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+    progressModal.markLastStudentComplete();
     progressModal.close();
     await this.createResultNote(records);
     if (errorCount > 0) {

@@ -1,7 +1,7 @@
 {
   "id": "student-activity-to-observation",
   "name": "Student Activity to Observation",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "minAppVersion": "0.15.0",
   "description": "학생활동 자료를 AI(OpenAI, Claude, Gemini, Grok)를 활용하여 교사관찰기록 문체로 변환합니다. NEIS 기준 글자수/바이트수를 자동 계산합니다.",
   "author": "잘생김프로쌤",
