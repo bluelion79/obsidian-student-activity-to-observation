@@ -1,0 +1,15 @@
+# Build output
+main.js
+
+# npm
+node_modules
+
+# IDE
+.idea
+*.iml
+
+# OS
+.DS_Store
+
+# Obsidian
+data.json
