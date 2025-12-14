@@ -183,6 +183,22 @@ function generateMarkdownTable(records: ObservationRecord[]): string {
   return table;
 }
 
+/**
+ * 구글 스프레드시트용 TSV 데이터 생성 (탭 구분)
+ */
+function generateTSVData(records: ObservationRecord[]): string {
+  let tsv = '학번\t성명\t학생활동기록\t교사관찰기록\t글자 수\t바이트 수\n';
+
+  for (const record of records) {
+    // 탭과 줄바꿈을 공백으로 대체하여 셀 구분 유지
+    const cleanActivity = record.activityContent.replace(/[\t\n\r]/g, ' ');
+    const cleanObservation = record.observation.replace(/[\t\n\r]/g, ' ');
+    tsv += `${record.studentId}\t${record.studentName}\t${cleanActivity}\t${cleanObservation}\t${record.charCount}\t${record.byteCount}\n`;
+  }
+
+  return tsv;
+}
+
 // ==================== AI Service ====================
 
 const SYSTEM_PROMPT = `당신은 학생을 깊이 이해하고 애정을 가지고 관찰하는 한국 고등학교 담임교사입니다.
@@ -937,6 +953,16 @@ export default class StudentActivityPlugin extends Plugin {
 
 생성일시: ${now.toLocaleString('ko-KR')}
 총 인원: ${records.length}명
+
+## 📋 구글 스프레드시트용 복사 영역
+
+> 아래 코드 블록을 클릭하여 전체 선택 후 복사(Ctrl+C)하세요.
+> 구글 스프레드시트에 붙여넣기(Ctrl+V)하면 열이 자동으로 구분됩니다.
+
+\`\`\`tsv
+${generateTSVData(records)}\`\`\`
+
+---
 
 ## 결과 테이블
 
