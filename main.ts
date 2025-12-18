@@ -1071,6 +1071,10 @@ class EditObservationModal extends Modal {
   byteCountEl: HTMLElement | null = null;
   spellResultsEl: HTMLElement | null = null;
   targetCharCount: number;
+  targetCharCountInput: HTMLInputElement | null = null;
+  aiPreviewEl: HTMLElement | null = null;
+  aiPreviewText: string = '';
+  isAiProcessing: boolean = false;
 
   constructor(
     app: App,
@@ -1127,17 +1131,78 @@ class EditObservationModal extends Modal {
     // 글자수/바이트수 실시간 표시
     const countsDiv = editSection.createDiv({ cls: 'sa-edit-counts' });
 
-    const targetMin = Math.round(this.targetCharCount * 0.85);
-    const targetMax = Math.round(this.targetCharCount * 1.15);
-
-    const targetInfo = countsDiv.createDiv({ cls: 'sa-edit-target' });
-    targetInfo.innerHTML = `🎯 목표: <strong>${this.targetCharCount}자</strong> (${targetMin}~${targetMax}자)`;
+    // 목표 글자수 조정 입력
+    const targetInputDiv = countsDiv.createDiv({ cls: 'sa-edit-target-input' });
+    targetInputDiv.createSpan({ text: '🎯 목표 글자수: ' });
+    this.targetCharCountInput = targetInputDiv.createEl('input', {
+      cls: 'sa-edit-target-number',
+      attr: { type: 'number', min: '50', max: '1000', value: String(this.targetCharCount) },
+    });
+    this.targetCharCountInput.addEventListener('change', () => {
+      const newTarget = parseInt(this.targetCharCountInput?.value || '300');
+      if (!isNaN(newTarget) && newTarget >= 50 && newTarget <= 1000) {
+        this.targetCharCount = newTarget;
+        this.updateCounts();
+      }
+    });
 
     const currentCounts = countsDiv.createDiv({ cls: 'sa-edit-current-counts' });
     this.charCountEl = currentCounts.createSpan({ cls: 'sa-edit-char-count' });
     this.byteCountEl = currentCounts.createSpan({ cls: 'sa-edit-byte-count' });
 
     this.updateCounts();
+
+    // AI 보조 수정 섹션
+    const aiSection = contentEl.createDiv({ cls: 'sa-edit-section sa-ai-section' });
+    aiSection.createEl('h4', { text: '🤖 AI 보조 수정' });
+
+    // 글자수 조절 버튼들
+    const charAdjustDiv = aiSection.createDiv({ cls: 'sa-ai-btn-group' });
+    charAdjustDiv.createSpan({ text: '글자수 조절:', cls: 'sa-ai-group-label' });
+
+    const expandBtn = charAdjustDiv.createEl('button', {
+      text: '📈 늘리기',
+      cls: 'sa-ai-btn',
+    });
+    expandBtn.addEventListener('click', () => this.aiAdjustLength('expand'));
+
+    const shrinkBtn = charAdjustDiv.createEl('button', {
+      text: '📉 줄이기',
+      cls: 'sa-ai-btn',
+    });
+    shrinkBtn.addEventListener('click', () => this.aiAdjustLength('shrink'));
+
+    const targetBtn = charAdjustDiv.createEl('button', {
+      text: '🎯 목표 맞추기',
+      cls: 'sa-ai-btn sa-ai-btn-primary',
+    });
+    targetBtn.addEventListener('click', () => this.aiAdjustLength('target'));
+
+    // 빠른 개선 버튼들
+    const improveDiv = aiSection.createDiv({ cls: 'sa-ai-btn-group' });
+    improveDiv.createSpan({ text: '빠른 개선:', cls: 'sa-ai-group-label' });
+
+    const polishBtn = improveDiv.createEl('button', {
+      text: '✨ 다듬기',
+      cls: 'sa-ai-btn',
+    });
+    polishBtn.addEventListener('click', () => this.aiImprove('polish'));
+
+    const detailBtn = improveDiv.createEl('button', {
+      text: '📝 구체화',
+      cls: 'sa-ai-btn',
+    });
+    detailBtn.addEventListener('click', () => this.aiImprove('detail'));
+
+    const styleBtn = improveDiv.createEl('button', {
+      text: '🔄 문체 교정',
+      cls: 'sa-ai-btn',
+    });
+    styleBtn.addEventListener('click', () => this.aiImprove('style'));
+
+    // AI 미리보기 영역
+    this.aiPreviewEl = aiSection.createDiv({ cls: 'sa-ai-preview' });
+    this.aiPreviewEl.style.display = 'none';
 
     // 맞춤법 검사 섹션
     const spellSection = contentEl.createDiv({ cls: 'sa-edit-section' });
@@ -1277,6 +1342,354 @@ class EditObservationModal extends Modal {
     this.onSave(newObservation, charCount, byteCount);
     this.close();
     new Notice(`✅ ${this.studentName} 교사관찰기록이 저장되었습니다.`);
+  }
+
+  /**
+   * AI 글자수 조절
+   */
+  async aiAdjustLength(mode: 'expand' | 'shrink' | 'target') {
+    if (!this.textArea || this.isAiProcessing) return;
+
+    const currentText = this.textArea.value;
+    if (!currentText.trim()) {
+      new Notice('수정할 내용이 없습니다.');
+      return;
+    }
+
+    const currentChars = countChars(currentText);
+    const targetMin = Math.round(this.targetCharCount * 0.85);
+    const targetMax = Math.round(this.targetCharCount * 1.15);
+
+    let instruction = '';
+    let targetChars = this.targetCharCount;
+
+    switch (mode) {
+      case 'expand':
+        targetChars = currentChars + 50;
+        instruction = `다음 교사관찰기록을 약 ${targetChars}자 정도로 내용을 더 구체적으로 서술하여 늘려주세요. 학생의 활동 내용을 참고하여 자연스럽게 확장해주세요.`;
+        break;
+      case 'shrink':
+        targetChars = Math.max(50, currentChars - 50);
+        instruction = `다음 교사관찰기록을 약 ${targetChars}자 정도로 핵심만 남기고 압축해주세요. 의미가 손실되지 않도록 주의하세요.`;
+        break;
+      case 'target':
+        instruction = `다음 교사관찰기록을 정확히 ${targetMin}~${targetMax}자 범위로 조절해주세요. 현재 ${currentChars}자입니다. ${currentChars < targetMin ? '내용을 더 구체적으로 서술하여 늘려주세요.' : currentChars > targetMax ? '핵심만 남기고 압축해주세요.' : '적절한 범위이지만 더 자연스럽게 다듬어주세요.'}`;
+        break;
+    }
+
+    await this.callAiForEdit(instruction, currentText);
+  }
+
+  /**
+   * AI 빠른 개선
+   */
+  async aiImprove(mode: 'polish' | 'detail' | 'style') {
+    if (!this.textArea || this.isAiProcessing) return;
+
+    const currentText = this.textArea.value;
+    if (!currentText.trim()) {
+      new Notice('수정할 내용이 없습니다.');
+      return;
+    }
+
+    let instruction = '';
+
+    switch (mode) {
+      case 'polish':
+        instruction = `다음 교사관찰기록의 문장을 더 자연스럽고 부드럽게 다듬어주세요. 어색한 표현이나 반복되는 부분을 개선하고, 글자수는 최대한 유지해주세요.`;
+        break;
+      case 'detail':
+        instruction = `다음 교사관찰기록을 학생의 활동 내용을 참고하여 더 구체적이고 생생하게 서술해주세요. 추상적인 표현을 구체적인 사례나 행동으로 바꿔주세요.`;
+        break;
+      case 'style':
+        instruction = `다음 텍스트를 교사관찰기록 문체로 교정해주세요.
+규칙:
+- 주어("학생은", "그는", "00은/는") 사용 금지 - 주어 없이 시작
+- "~했습니다", "~입니다" 대신 "~함", "~임" 사용
+- 객관적이고 관찰 가능한 사실 위주로 서술
+- 3인칭 관찰자 시점 유지
+- 글자수는 최대한 유지`;
+        break;
+    }
+
+    await this.callAiForEdit(instruction, currentText);
+  }
+
+  /**
+   * AI API 호출하여 수정 결과 받기
+   */
+  async callAiForEdit(instruction: string, currentText: string) {
+    if (!this.aiPreviewEl) return;
+
+    this.isAiProcessing = true;
+    this.aiPreviewEl.empty();
+    this.aiPreviewEl.style.display = 'block';
+
+    const loadingDiv = this.aiPreviewEl.createDiv({ cls: 'sa-ai-loading' });
+    loadingDiv.setText('🔄 AI가 수정 중입니다...');
+
+    const systemPrompt = `당신은 한국 초중고 교사의 학생 관찰 기록을 작성하는 전문가입니다.
+
+[교사관찰기록 작성 규칙 - 반드시 준수]
+1. 주어 사용 절대 금지: "학생은", "그는", "00은/는" 등으로 시작하지 않음
+2. 문장 종결어미: "~했습니다" 대신 "~함", "~입니다" 대신 "~임" 사용
+3. 한글만 사용: 영어 단어 사용 금지 (Leadership→리더십, Feedback→피드백 등)
+4. 객관적 서술: 관찰 가능한 구체적 사실 위주
+5. 결과만 출력: 설명이나 부연 없이 수정된 교사관찰기록 텍스트만 출력`;
+
+    const userPrompt = `[학생 정보]
+- 학번: ${this.studentId}
+- 이름: ${this.studentName}
+
+[학생활동기록 (참고용)]
+${this.activityContent}
+
+[현재 교사관찰기록]
+${currentText}
+
+[수정 요청]
+${instruction}
+
+위 요청에 따라 수정된 교사관찰기록만 출력해주세요. 다른 설명 없이 결과만 출력합니다.`;
+
+    try {
+      const { apiKey, apiProvider, modelId } = this.plugin.settings;
+
+      if (!apiKey) {
+        throw new Error('API 키가 설정되지 않았습니다.');
+      }
+
+      let result = '';
+
+      switch (apiProvider) {
+        case 'openai':
+          result = await this.callOpenAIForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        case 'claude':
+          result = await this.callClaudeForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        case 'gemini':
+          result = await this.callGeminiForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        case 'grok':
+          result = await this.callGrokForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        default:
+          throw new Error(`지원하지 않는 AI 제공자: ${apiProvider}`);
+      }
+
+      this.aiPreviewText = result.trim();
+      this.showAiPreview();
+    } catch (error) {
+      this.aiPreviewEl.empty();
+      const errorDiv = this.aiPreviewEl.createDiv({ cls: 'sa-ai-error' });
+      errorDiv.setText(`❌ AI 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      new Notice('AI 수정 실패: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+    } finally {
+      this.isAiProcessing = false;
+    }
+  }
+
+  /**
+   * AI 수정 결과 미리보기 표시
+   */
+  showAiPreview() {
+    if (!this.aiPreviewEl || !this.textArea) return;
+
+    const currentText = this.textArea.value;
+    const currentChars = countChars(currentText);
+    const newChars = countChars(this.aiPreviewText);
+    const diff = newChars - currentChars;
+    const diffStr = diff >= 0 ? `+${diff}` : `${diff}`;
+
+    this.aiPreviewEl.empty();
+
+    const headerDiv = this.aiPreviewEl.createDiv({ cls: 'sa-ai-preview-header' });
+    headerDiv.innerHTML = `📋 AI 수정 제안 <span class="sa-ai-char-diff">(${currentChars}자 → ${newChars}자, ${diffStr}자)</span>`;
+
+    // 탭 버튼
+    const tabDiv = this.aiPreviewEl.createDiv({ cls: 'sa-ai-preview-tabs' });
+    const previewTab = tabDiv.createEl('button', { text: '수정안', cls: 'sa-ai-tab active' });
+    const originalTab = tabDiv.createEl('button', { text: '원본', cls: 'sa-ai-tab' });
+    const diffTab = tabDiv.createEl('button', { text: '비교', cls: 'sa-ai-tab' });
+
+    // 내용 영역
+    const contentDiv = this.aiPreviewEl.createDiv({ cls: 'sa-ai-preview-content' });
+    contentDiv.setText(this.aiPreviewText);
+
+    // 탭 이벤트
+    previewTab.addEventListener('click', () => {
+      tabDiv.querySelectorAll('.sa-ai-tab').forEach(t => t.removeClass('active'));
+      previewTab.addClass('active');
+      contentDiv.setText(this.aiPreviewText);
+    });
+
+    originalTab.addEventListener('click', () => {
+      tabDiv.querySelectorAll('.sa-ai-tab').forEach(t => t.removeClass('active'));
+      originalTab.addClass('active');
+      contentDiv.setText(currentText);
+    });
+
+    diffTab.addEventListener('click', () => {
+      tabDiv.querySelectorAll('.sa-ai-tab').forEach(t => t.removeClass('active'));
+      diffTab.addClass('active');
+      contentDiv.innerHTML = this.generateDiffHtml(currentText, this.aiPreviewText);
+    });
+
+    // 버튼 영역
+    const buttonDiv = this.aiPreviewEl.createDiv({ cls: 'sa-ai-preview-buttons' });
+
+    const applyBtn = buttonDiv.createEl('button', {
+      text: '✅ 적용',
+      cls: 'sa-ai-apply-btn',
+    });
+    applyBtn.addEventListener('click', () => this.applyAiResult());
+
+    const cancelBtn = buttonDiv.createEl('button', {
+      text: '❌ 취소',
+      cls: 'sa-ai-cancel-btn',
+    });
+    cancelBtn.addEventListener('click', () => this.cancelAiResult());
+  }
+
+  /**
+   * 간단한 차이점 하이라이트 생성
+   */
+  generateDiffHtml(original: string, modified: string): string {
+    // 간단한 방식: 원본과 수정본을 나란히 표시
+    return `<div class="sa-diff-container">
+      <div class="sa-diff-original"><strong>원본:</strong><br>${original}</div>
+      <div class="sa-diff-modified"><strong>수정안:</strong><br>${modified}</div>
+    </div>`;
+  }
+
+  /**
+   * AI 수정 결과 적용
+   */
+  applyAiResult() {
+    if (!this.textArea || !this.aiPreviewText) return;
+
+    this.textArea.value = this.aiPreviewText;
+    this.updateCounts();
+    this.cancelAiResult();
+    new Notice('✅ AI 수정안이 적용되었습니다.');
+  }
+
+  /**
+   * AI 수정 미리보기 닫기
+   */
+  cancelAiResult() {
+    if (!this.aiPreviewEl) return;
+    this.aiPreviewEl.empty();
+    this.aiPreviewEl.style.display = 'none';
+    this.aiPreviewText = '';
+  }
+
+  /**
+   * OpenAI API 호출 (수정용)
+   */
+  async callOpenAIForEdit(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+    const response = await requestUrl({
+      url: 'https://api.openai.com/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: model || 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`OpenAI API 오류: ${response.status}`);
+    }
+
+    return response.json.choices[0].message.content;
+  }
+
+  /**
+   * Claude API 호출 (수정용)
+   */
+  async callClaudeForEdit(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+    const response = await requestUrl({
+      url: 'https://api.anthropic.com/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: model || 'claude-3-5-haiku-latest',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Claude API 오류: ${response.status}`);
+    }
+
+    return response.json.content[0].text;
+  }
+
+  /**
+   * Gemini API 호출 (수정용)
+   */
+  async callGeminiForEdit(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+    const modelId = model || 'gemini-2.0-flash-exp';
+    const response = await requestUrl({
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
+      }),
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Gemini API 오류: ${response.status}`);
+    }
+
+    return response.json.candidates[0].content.parts[0].text;
+  }
+
+  /**
+   * Grok API 호출 (수정용)
+   */
+  async callGrokForEdit(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+    const response = await requestUrl({
+      url: 'https://api.x.ai/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: model || 'grok-beta',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Grok API 오류: ${response.status}`);
+    }
+
+    return response.json.choices[0].message.content;
   }
 
   onClose() {

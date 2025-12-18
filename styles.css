@@ -1778,3 +1778,295 @@
 .sa-edit-spell-list::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ==================== AI Assist Section Styles ==================== */
+
+/* Target Input */
+.sa-edit-target-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sa-edit-target-number {
+  width: 70px;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-sm);
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.sa-edit-target-number:focus {
+  border-color: var(--sa-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(91, 110, 247, 0.15);
+}
+
+/* AI Section */
+.sa-ai-section {
+  background: linear-gradient(135deg, rgba(91, 110, 247, 0.05), rgba(118, 75, 162, 0.05));
+  border: 1px solid rgba(91, 110, 247, 0.2);
+  border-radius: var(--sa-radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.sa-ai-section h4 {
+  margin: 0 0 14px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sa-primary);
+}
+
+/* AI Button Group */
+.sa-ai-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.sa-ai-group-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 70px;
+}
+
+.sa-ai-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-sm);
+  cursor: pointer;
+  transition: all var(--sa-transition-fast);
+}
+
+.sa-ai-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--sa-primary);
+  color: var(--sa-primary);
+}
+
+.sa-ai-btn:active {
+  transform: scale(0.98);
+}
+
+.sa-ai-btn-primary {
+  background: linear-gradient(135deg, var(--sa-gradient-start), var(--sa-gradient-end));
+  color: white;
+  border: none;
+}
+
+.sa-ai-btn-primary:hover {
+  color: white;
+  box-shadow: var(--sa-shadow-md), 0 0 12px rgba(91, 110, 247, 0.3);
+  transform: translateY(-1px);
+}
+
+/* AI Preview */
+.sa-ai-preview {
+  margin-top: 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-md);
+  background: var(--background-primary);
+  overflow: hidden;
+}
+
+.sa-ai-loading {
+  text-align: center;
+  padding: 24px;
+  color: var(--sa-primary);
+  font-weight: 500;
+  animation: pulse-opacity 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-opacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.sa-ai-error {
+  text-align: center;
+  padding: 16px;
+  color: var(--sa-error);
+  font-weight: 500;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.sa-ai-preview-header {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-secondary-alt) 100%);
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-normal);
+}
+
+.sa-ai-char-diff {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sa-primary);
+  margin-left: 8px;
+}
+
+/* AI Preview Tabs */
+.sa-ai-preview-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sa-ai-tab {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--sa-radius-sm);
+  cursor: pointer;
+  transition: all var(--sa-transition-fast);
+}
+
+.sa-ai-tab:hover {
+  color: var(--text-normal);
+  background: var(--background-primary);
+}
+
+.sa-ai-tab.active {
+  color: var(--sa-primary);
+  background: var(--background-primary);
+  border-color: var(--sa-primary);
+  font-weight: 600;
+}
+
+/* AI Preview Content */
+.sa-ai-preview-content {
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-normal);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Diff Container */
+.sa-diff-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sa-diff-original,
+.sa-diff-modified {
+  padding: 10px;
+  border-radius: var(--sa-radius-sm);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.sa-diff-original {
+  background: rgba(239, 68, 68, 0.05);
+  border-left: 3px solid var(--sa-error);
+}
+
+.sa-diff-modified {
+  background: rgba(34, 197, 94, 0.05);
+  border-left: 3px solid var(--sa-success);
+}
+
+.sa-diff-original strong,
+.sa-diff-modified strong {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* AI Preview Buttons */
+.sa-ai-preview-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.sa-ai-apply-btn {
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, var(--sa-success), #16A34A);
+  border: none;
+  border-radius: var(--sa-radius-sm);
+  cursor: pointer;
+  transition: all var(--sa-transition-normal);
+}
+
+.sa-ai-apply-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--sa-shadow-md), 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+.sa-ai-cancel-btn {
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-sm);
+  cursor: pointer;
+  transition: all var(--sa-transition-fast);
+}
+
+.sa-ai-cancel-btn:hover {
+  color: var(--sa-error);
+  border-color: var(--sa-error);
+}
+
+/* Dark Mode Adjustments for AI Section */
+.theme-dark .sa-ai-section {
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.08), rgba(167, 139, 250, 0.08));
+  border-color: rgba(129, 140, 248, 0.2);
+}
+
+.theme-dark .sa-ai-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.theme-dark .sa-ai-btn-primary:hover {
+  box-shadow: var(--sa-shadow-md), 0 0 15px rgba(129, 140, 248, 0.4);
+}
+
+/* AI Preview Scrollbar */
+.sa-ai-preview-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sa-ai-preview-content::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: 3px;
+}
+
+.sa-ai-preview-content::-webkit-scrollbar-thumb {
+  background: var(--text-faint);
+  border-radius: 3px;
+}
+
+.sa-ai-preview-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

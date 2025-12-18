@@ -850,6 +850,10 @@ var EditObservationModal = class extends import_obsidian.Modal {
     this.charCountEl = null;
     this.byteCountEl = null;
     this.spellResultsEl = null;
+    this.targetCharCountInput = null;
+    this.aiPreviewEl = null;
+    this.aiPreviewText = "";
+    this.isAiProcessing = false;
     this.plugin = plugin;
     this.studentIndex = studentIndex;
     this.studentId = studentId;
@@ -881,14 +885,62 @@ var EditObservationModal = class extends import_obsidian.Modal {
     this.textArea.value = this.observation;
     this.textArea.addEventListener("input", () => this.updateCounts());
     const countsDiv = editSection.createDiv({ cls: "sa-edit-counts" });
-    const targetMin = Math.round(this.targetCharCount * 0.85);
-    const targetMax = Math.round(this.targetCharCount * 1.15);
-    const targetInfo = countsDiv.createDiv({ cls: "sa-edit-target" });
-    targetInfo.innerHTML = `\u{1F3AF} \uBAA9\uD45C: <strong>${this.targetCharCount}\uC790</strong> (${targetMin}~${targetMax}\uC790)`;
+    const targetInputDiv = countsDiv.createDiv({ cls: "sa-edit-target-input" });
+    targetInputDiv.createSpan({ text: "\u{1F3AF} \uBAA9\uD45C \uAE00\uC790\uC218: " });
+    this.targetCharCountInput = targetInputDiv.createEl("input", {
+      cls: "sa-edit-target-number",
+      attr: { type: "number", min: "50", max: "1000", value: String(this.targetCharCount) }
+    });
+    this.targetCharCountInput.addEventListener("change", () => {
+      var _a;
+      const newTarget = parseInt(((_a = this.targetCharCountInput) == null ? void 0 : _a.value) || "300");
+      if (!isNaN(newTarget) && newTarget >= 50 && newTarget <= 1e3) {
+        this.targetCharCount = newTarget;
+        this.updateCounts();
+      }
+    });
     const currentCounts = countsDiv.createDiv({ cls: "sa-edit-current-counts" });
     this.charCountEl = currentCounts.createSpan({ cls: "sa-edit-char-count" });
     this.byteCountEl = currentCounts.createSpan({ cls: "sa-edit-byte-count" });
     this.updateCounts();
+    const aiSection = contentEl.createDiv({ cls: "sa-edit-section sa-ai-section" });
+    aiSection.createEl("h4", { text: "\u{1F916} AI \uBCF4\uC870 \uC218\uC815" });
+    const charAdjustDiv = aiSection.createDiv({ cls: "sa-ai-btn-group" });
+    charAdjustDiv.createSpan({ text: "\uAE00\uC790\uC218 \uC870\uC808:", cls: "sa-ai-group-label" });
+    const expandBtn = charAdjustDiv.createEl("button", {
+      text: "\u{1F4C8} \uB298\uB9AC\uAE30",
+      cls: "sa-ai-btn"
+    });
+    expandBtn.addEventListener("click", () => this.aiAdjustLength("expand"));
+    const shrinkBtn = charAdjustDiv.createEl("button", {
+      text: "\u{1F4C9} \uC904\uC774\uAE30",
+      cls: "sa-ai-btn"
+    });
+    shrinkBtn.addEventListener("click", () => this.aiAdjustLength("shrink"));
+    const targetBtn = charAdjustDiv.createEl("button", {
+      text: "\u{1F3AF} \uBAA9\uD45C \uB9DE\uCD94\uAE30",
+      cls: "sa-ai-btn sa-ai-btn-primary"
+    });
+    targetBtn.addEventListener("click", () => this.aiAdjustLength("target"));
+    const improveDiv = aiSection.createDiv({ cls: "sa-ai-btn-group" });
+    improveDiv.createSpan({ text: "\uBE60\uB978 \uAC1C\uC120:", cls: "sa-ai-group-label" });
+    const polishBtn = improveDiv.createEl("button", {
+      text: "\u2728 \uB2E4\uB4EC\uAE30",
+      cls: "sa-ai-btn"
+    });
+    polishBtn.addEventListener("click", () => this.aiImprove("polish"));
+    const detailBtn = improveDiv.createEl("button", {
+      text: "\u{1F4DD} \uAD6C\uCCB4\uD654",
+      cls: "sa-ai-btn"
+    });
+    detailBtn.addEventListener("click", () => this.aiImprove("detail"));
+    const styleBtn = improveDiv.createEl("button", {
+      text: "\u{1F504} \uBB38\uCCB4 \uAD50\uC815",
+      cls: "sa-ai-btn"
+    });
+    styleBtn.addEventListener("click", () => this.aiImprove("style"));
+    this.aiPreviewEl = aiSection.createDiv({ cls: "sa-ai-preview" });
+    this.aiPreviewEl.style.display = "none";
     const spellSection = contentEl.createDiv({ cls: "sa-edit-section" });
     const spellHeader = spellSection.createDiv({ cls: "sa-edit-spell-header" });
     spellHeader.createEl("h4", { text: "\u{1F4D6} \uB9DE\uCDA4\uBC95 \uAC80\uC0AC" });
@@ -998,6 +1050,308 @@ var EditObservationModal = class extends import_obsidian.Modal {
     this.onSave(newObservation, charCount, byteCount);
     this.close();
     new import_obsidian.Notice(`\u2705 ${this.studentName} \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC774 \uC800\uC7A5\uB418\uC5C8\uC2B5\uB2C8\uB2E4.`);
+  }
+  /**
+   * AI 글자수 조절
+   */
+  async aiAdjustLength(mode) {
+    if (!this.textArea || this.isAiProcessing)
+      return;
+    const currentText = this.textArea.value;
+    if (!currentText.trim()) {
+      new import_obsidian.Notice("\uC218\uC815\uD560 \uB0B4\uC6A9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    const currentChars = countChars(currentText);
+    const targetMin = Math.round(this.targetCharCount * 0.85);
+    const targetMax = Math.round(this.targetCharCount * 1.15);
+    let instruction = "";
+    let targetChars = this.targetCharCount;
+    switch (mode) {
+      case "expand":
+        targetChars = currentChars + 50;
+        instruction = `\uB2E4\uC74C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC744 \uC57D ${targetChars}\uC790 \uC815\uB3C4\uB85C \uB0B4\uC6A9\uC744 \uB354 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uB298\uB824\uC8FC\uC138\uC694. \uD559\uC0DD\uC758 \uD65C\uB3D9 \uB0B4\uC6A9\uC744 \uCC38\uACE0\uD558\uC5EC \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD655\uC7A5\uD574\uC8FC\uC138\uC694.`;
+        break;
+      case "shrink":
+        targetChars = Math.max(50, currentChars - 50);
+        instruction = `\uB2E4\uC74C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC744 \uC57D ${targetChars}\uC790 \uC815\uB3C4\uB85C \uD575\uC2EC\uB9CC \uB0A8\uAE30\uACE0 \uC555\uCD95\uD574\uC8FC\uC138\uC694. \uC758\uBBF8\uAC00 \uC190\uC2E4\uB418\uC9C0 \uC54A\uB3C4\uB85D \uC8FC\uC758\uD558\uC138\uC694.`;
+        break;
+      case "target":
+        instruction = `\uB2E4\uC74C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC744 \uC815\uD655\uD788 ${targetMin}~${targetMax}\uC790 \uBC94\uC704\uB85C \uC870\uC808\uD574\uC8FC\uC138\uC694. \uD604\uC7AC ${currentChars}\uC790\uC785\uB2C8\uB2E4. ${currentChars < targetMin ? "\uB0B4\uC6A9\uC744 \uB354 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uB298\uB824\uC8FC\uC138\uC694." : currentChars > targetMax ? "\uD575\uC2EC\uB9CC \uB0A8\uAE30\uACE0 \uC555\uCD95\uD574\uC8FC\uC138\uC694." : "\uC801\uC808\uD55C \uBC94\uC704\uC774\uC9C0\uB9CC \uB354 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uB2E4\uB4EC\uC5B4\uC8FC\uC138\uC694."}`;
+        break;
+    }
+    await this.callAiForEdit(instruction, currentText);
+  }
+  /**
+   * AI 빠른 개선
+   */
+  async aiImprove(mode) {
+    if (!this.textArea || this.isAiProcessing)
+      return;
+    const currentText = this.textArea.value;
+    if (!currentText.trim()) {
+      new import_obsidian.Notice("\uC218\uC815\uD560 \uB0B4\uC6A9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    let instruction = "";
+    switch (mode) {
+      case "polish":
+        instruction = `\uB2E4\uC74C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC758 \uBB38\uC7A5\uC744 \uB354 \uC790\uC5F0\uC2A4\uB7FD\uACE0 \uBD80\uB4DC\uB7FD\uAC8C \uB2E4\uB4EC\uC5B4\uC8FC\uC138\uC694. \uC5B4\uC0C9\uD55C \uD45C\uD604\uC774\uB098 \uBC18\uBCF5\uB418\uB294 \uBD80\uBD84\uC744 \uAC1C\uC120\uD558\uACE0, \uAE00\uC790\uC218\uB294 \uCD5C\uB300\uD55C \uC720\uC9C0\uD574\uC8FC\uC138\uC694.`;
+        break;
+      case "detail":
+        instruction = `\uB2E4\uC74C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC744 \uD559\uC0DD\uC758 \uD65C\uB3D9 \uB0B4\uC6A9\uC744 \uCC38\uACE0\uD558\uC5EC \uB354 \uAD6C\uCCB4\uC801\uC774\uACE0 \uC0DD\uC0DD\uD558\uAC8C \uC11C\uC220\uD574\uC8FC\uC138\uC694. \uCD94\uC0C1\uC801\uC778 \uD45C\uD604\uC744 \uAD6C\uCCB4\uC801\uC778 \uC0AC\uB840\uB098 \uD589\uB3D9\uC73C\uB85C \uBC14\uAFD4\uC8FC\uC138\uC694.`;
+        break;
+      case "style":
+        instruction = `\uB2E4\uC74C \uD14D\uC2A4\uD2B8\uB97C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBB38\uCCB4\uB85C \uAD50\uC815\uD574\uC8FC\uC138\uC694.
+\uADDC\uCE59:
+- \uC8FC\uC5B4("\uD559\uC0DD\uC740", "\uADF8\uB294", "00\uC740/\uB294") \uC0AC\uC6A9 \uAE08\uC9C0 - \uC8FC\uC5B4 \uC5C6\uC774 \uC2DC\uC791
+- "~\uD588\uC2B5\uB2C8\uB2E4", "~\uC785\uB2C8\uB2E4" \uB300\uC2E0 "~\uD568", "~\uC784" \uC0AC\uC6A9
+- \uAC1D\uAD00\uC801\uC774\uACE0 \uAD00\uCC30 \uAC00\uB2A5\uD55C \uC0AC\uC2E4 \uC704\uC8FC\uB85C \uC11C\uC220
+- 3\uC778\uCE6D \uAD00\uCC30\uC790 \uC2DC\uC810 \uC720\uC9C0
+- \uAE00\uC790\uC218\uB294 \uCD5C\uB300\uD55C \uC720\uC9C0`;
+        break;
+    }
+    await this.callAiForEdit(instruction, currentText);
+  }
+  /**
+   * AI API 호출하여 수정 결과 받기
+   */
+  async callAiForEdit(instruction, currentText) {
+    if (!this.aiPreviewEl)
+      return;
+    this.isAiProcessing = true;
+    this.aiPreviewEl.empty();
+    this.aiPreviewEl.style.display = "block";
+    const loadingDiv = this.aiPreviewEl.createDiv({ cls: "sa-ai-loading" });
+    loadingDiv.setText("\u{1F504} AI\uAC00 \uC218\uC815 \uC911\uC785\uB2C8\uB2E4...");
+    const systemPrompt = `\uB2F9\uC2E0\uC740 \uD55C\uAD6D \uCD08\uC911\uACE0 \uAD50\uC0AC\uC758 \uD559\uC0DD \uAD00\uCC30 \uAE30\uB85D\uC744 \uC791\uC131\uD558\uB294 \uC804\uBB38\uAC00\uC785\uB2C8\uB2E4.
+
+[\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uC791\uC131 \uADDC\uCE59 - \uBC18\uB4DC\uC2DC \uC900\uC218]
+1. \uC8FC\uC5B4 \uC0AC\uC6A9 \uC808\uB300 \uAE08\uC9C0: "\uD559\uC0DD\uC740", "\uADF8\uB294", "00\uC740/\uB294" \uB4F1\uC73C\uB85C \uC2DC\uC791\uD558\uC9C0 \uC54A\uC74C
+2. \uBB38\uC7A5 \uC885\uACB0\uC5B4\uBBF8: "~\uD588\uC2B5\uB2C8\uB2E4" \uB300\uC2E0 "~\uD568", "~\uC785\uB2C8\uB2E4" \uB300\uC2E0 "~\uC784" \uC0AC\uC6A9
+3. \uD55C\uAE00\uB9CC \uC0AC\uC6A9: \uC601\uC5B4 \uB2E8\uC5B4 \uC0AC\uC6A9 \uAE08\uC9C0 (Leadership\u2192\uB9AC\uB354\uC2ED, Feedback\u2192\uD53C\uB4DC\uBC31 \uB4F1)
+4. \uAC1D\uAD00\uC801 \uC11C\uC220: \uAD00\uCC30 \uAC00\uB2A5\uD55C \uAD6C\uCCB4\uC801 \uC0AC\uC2E4 \uC704\uC8FC
+5. \uACB0\uACFC\uB9CC \uCD9C\uB825: \uC124\uBA85\uC774\uB098 \uBD80\uC5F0 \uC5C6\uC774 \uC218\uC815\uB41C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uD14D\uC2A4\uD2B8\uB9CC \uCD9C\uB825`;
+    const userPrompt = `[\uD559\uC0DD \uC815\uBCF4]
+- \uD559\uBC88: ${this.studentId}
+- \uC774\uB984: ${this.studentName}
+
+[\uD559\uC0DD\uD65C\uB3D9\uAE30\uB85D (\uCC38\uACE0\uC6A9)]
+${this.activityContent}
+
+[\uD604\uC7AC \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D]
+${currentText}
+
+[\uC218\uC815 \uC694\uCCAD]
+${instruction}
+
+\uC704 \uC694\uCCAD\uC5D0 \uB530\uB77C \uC218\uC815\uB41C \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825\uD574\uC8FC\uC138\uC694. \uB2E4\uB978 \uC124\uBA85 \uC5C6\uC774 \uACB0\uACFC\uB9CC \uCD9C\uB825\uD569\uB2C8\uB2E4.`;
+    try {
+      const { apiKey, apiProvider, modelId } = this.plugin.settings;
+      if (!apiKey) {
+        throw new Error("API \uD0A4\uAC00 \uC124\uC815\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
+      }
+      let result = "";
+      switch (apiProvider) {
+        case "openai":
+          result = await this.callOpenAIForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        case "claude":
+          result = await this.callClaudeForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        case "gemini":
+          result = await this.callGeminiForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        case "grok":
+          result = await this.callGrokForEdit(apiKey, modelId, systemPrompt, userPrompt);
+          break;
+        default:
+          throw new Error(`\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 AI \uC81C\uACF5\uC790: ${apiProvider}`);
+      }
+      this.aiPreviewText = result.trim();
+      this.showAiPreview();
+    } catch (error) {
+      this.aiPreviewEl.empty();
+      const errorDiv = this.aiPreviewEl.createDiv({ cls: "sa-ai-error" });
+      errorDiv.setText(`\u274C AI \uC624\uB958: ${error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958"}`);
+      new import_obsidian.Notice("AI \uC218\uC815 \uC2E4\uD328: " + (error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958"));
+    } finally {
+      this.isAiProcessing = false;
+    }
+  }
+  /**
+   * AI 수정 결과 미리보기 표시
+   */
+  showAiPreview() {
+    if (!this.aiPreviewEl || !this.textArea)
+      return;
+    const currentText = this.textArea.value;
+    const currentChars = countChars(currentText);
+    const newChars = countChars(this.aiPreviewText);
+    const diff = newChars - currentChars;
+    const diffStr = diff >= 0 ? `+${diff}` : `${diff}`;
+    this.aiPreviewEl.empty();
+    const headerDiv = this.aiPreviewEl.createDiv({ cls: "sa-ai-preview-header" });
+    headerDiv.innerHTML = `\u{1F4CB} AI \uC218\uC815 \uC81C\uC548 <span class="sa-ai-char-diff">(${currentChars}\uC790 \u2192 ${newChars}\uC790, ${diffStr}\uC790)</span>`;
+    const tabDiv = this.aiPreviewEl.createDiv({ cls: "sa-ai-preview-tabs" });
+    const previewTab = tabDiv.createEl("button", { text: "\uC218\uC815\uC548", cls: "sa-ai-tab active" });
+    const originalTab = tabDiv.createEl("button", { text: "\uC6D0\uBCF8", cls: "sa-ai-tab" });
+    const diffTab = tabDiv.createEl("button", { text: "\uBE44\uAD50", cls: "sa-ai-tab" });
+    const contentDiv = this.aiPreviewEl.createDiv({ cls: "sa-ai-preview-content" });
+    contentDiv.setText(this.aiPreviewText);
+    previewTab.addEventListener("click", () => {
+      tabDiv.querySelectorAll(".sa-ai-tab").forEach((t) => t.removeClass("active"));
+      previewTab.addClass("active");
+      contentDiv.setText(this.aiPreviewText);
+    });
+    originalTab.addEventListener("click", () => {
+      tabDiv.querySelectorAll(".sa-ai-tab").forEach((t) => t.removeClass("active"));
+      originalTab.addClass("active");
+      contentDiv.setText(currentText);
+    });
+    diffTab.addEventListener("click", () => {
+      tabDiv.querySelectorAll(".sa-ai-tab").forEach((t) => t.removeClass("active"));
+      diffTab.addClass("active");
+      contentDiv.innerHTML = this.generateDiffHtml(currentText, this.aiPreviewText);
+    });
+    const buttonDiv = this.aiPreviewEl.createDiv({ cls: "sa-ai-preview-buttons" });
+    const applyBtn = buttonDiv.createEl("button", {
+      text: "\u2705 \uC801\uC6A9",
+      cls: "sa-ai-apply-btn"
+    });
+    applyBtn.addEventListener("click", () => this.applyAiResult());
+    const cancelBtn = buttonDiv.createEl("button", {
+      text: "\u274C \uCDE8\uC18C",
+      cls: "sa-ai-cancel-btn"
+    });
+    cancelBtn.addEventListener("click", () => this.cancelAiResult());
+  }
+  /**
+   * 간단한 차이점 하이라이트 생성
+   */
+  generateDiffHtml(original, modified) {
+    return `<div class="sa-diff-container">
+      <div class="sa-diff-original"><strong>\uC6D0\uBCF8:</strong><br>${original}</div>
+      <div class="sa-diff-modified"><strong>\uC218\uC815\uC548:</strong><br>${modified}</div>
+    </div>`;
+  }
+  /**
+   * AI 수정 결과 적용
+   */
+  applyAiResult() {
+    if (!this.textArea || !this.aiPreviewText)
+      return;
+    this.textArea.value = this.aiPreviewText;
+    this.updateCounts();
+    this.cancelAiResult();
+    new import_obsidian.Notice("\u2705 AI \uC218\uC815\uC548\uC774 \uC801\uC6A9\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
+  }
+  /**
+   * AI 수정 미리보기 닫기
+   */
+  cancelAiResult() {
+    if (!this.aiPreviewEl)
+      return;
+    this.aiPreviewEl.empty();
+    this.aiPreviewEl.style.display = "none";
+    this.aiPreviewText = "";
+  }
+  /**
+   * OpenAI API 호출 (수정용)
+   */
+  async callOpenAIForEdit(apiKey, model, systemPrompt, userPrompt) {
+    const response = await (0, import_obsidian.requestUrl)({
+      url: "https://api.openai.com/v1/chat/completions",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model || "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1e3
+      })
+    });
+    if (response.status !== 200) {
+      throw new Error(`OpenAI API \uC624\uB958: ${response.status}`);
+    }
+    return response.json.choices[0].message.content;
+  }
+  /**
+   * Claude API 호출 (수정용)
+   */
+  async callClaudeForEdit(apiKey, model, systemPrompt, userPrompt) {
+    const response = await (0, import_obsidian.requestUrl)({
+      url: "https://api.anthropic.com/v1/messages",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: model || "claude-3-5-haiku-latest",
+        max_tokens: 1e3,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }]
+      })
+    });
+    if (response.status !== 200) {
+      throw new Error(`Claude API \uC624\uB958: ${response.status}`);
+    }
+    return response.json.content[0].text;
+  }
+  /**
+   * Gemini API 호출 (수정용)
+   */
+  async callGeminiForEdit(apiKey, model, systemPrompt, userPrompt) {
+    const modelId = model || "gemini-2.0-flash-exp";
+    const response = await (0, import_obsidian.requestUrl)({
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${systemPrompt}
+
+${userPrompt}` }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1e3 }
+      })
+    });
+    if (response.status !== 200) {
+      throw new Error(`Gemini API \uC624\uB958: ${response.status}`);
+    }
+    return response.json.candidates[0].content.parts[0].text;
+  }
+  /**
+   * Grok API 호출 (수정용)
+   */
+  async callGrokForEdit(apiKey, model, systemPrompt, userPrompt) {
+    const response = await (0, import_obsidian.requestUrl)({
+      url: "https://api.x.ai/v1/chat/completions",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model || "grok-beta",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1e3
+      })
+    });
+    if (response.status !== 200) {
+      throw new Error(`Grok API \uC624\uB958: ${response.status}`);
+    }
+    return response.json.choices[0].message.content;
   }
   onClose() {
     const { contentEl } = this;
