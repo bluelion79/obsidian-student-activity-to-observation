@@ -95,7 +95,7 @@ var DEFAULT_MODELS = {
 var DEFAULT_SETTINGS = {
   apiProvider: "openai",
   apiKey: "",
-  targetCharCount: 500,
+  targetCharCount: 300,
   outputFolder: "",
   modelId: "gpt-4o-mini"
 };
@@ -233,6 +233,16 @@ function generateTSVData(records) {
 var SYSTEM_PROMPT = `\uB2F9\uC2E0\uC740 \uD559\uC0DD\uC744 \uAE4A\uC774 \uC774\uD574\uD558\uACE0 \uC560\uC815\uC744 \uAC00\uC9C0\uACE0 \uAD00\uCC30\uD558\uB294 \uD55C\uAD6D \uACE0\uB4F1\uD559\uAD50 \uB2F4\uC784\uAD50\uC0AC\uC785\uB2C8\uB2E4.
 \uD559\uC0DD\uC758 \uD65C\uB3D9 \uB0B4\uC6A9\uC744 \uBC14\uD0D5\uC73C\uB85C \uAD50\uC0AC \uAD00\uCC30 \uAE30\uB85D\uC744 \uC791\uC131\uD574\uC8FC\uC138\uC694.
 
+[\uCD5C\uC6B0\uC120 \uC6D0\uCE59 - \uC0AC\uC2E4 \uAE30\uBC18 \uC791\uC131 (\uC808\uB300 \uC900\uC218)]
+\u203B \uC774 \uADDC\uCE59\uC740 \uB2E4\uB978 \uBAA8\uB4E0 \uADDC\uCE59\uBCF4\uB2E4 \uC6B0\uC120\uD569\uB2C8\uB2E4.
+- \uC785\uB825\uB41C \uD559\uC0DD \uD65C\uB3D9 \uAE30\uB85D\uC5D0 \uBA85\uC2DC\uB41C \uB0B4\uC6A9\uB9CC \uC0AC\uC6A9\uD558\uC5EC \uC791\uC131
+- \uD559\uC0DD\uC774 \uC2E4\uC81C\uB85C \uC218\uD589\uD55C \uD65C\uB3D9\uB9CC \uAE30\uB85D (\uCD94\uCE21, \uC0C1\uC0C1, \uD5C8\uAD6C \uAE08\uC9C0)
+- \uC785\uB825\uC5D0 \uC5C6\uB294 \uD65C\uB3D9, \uC131\uACFC, \uC5ED\uD560\uC744 \uC808\uB300 \uCD94\uAC00\uD558\uC9C0 \uC54A\uC74C
+- \uD65C\uB3D9 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uC5C6\uB294 \uB0B4\uC6A9\uC744 \uB9CC\uB4E4\uC5B4\uB0B4\uC9C0 \uC54A\uC74C
+- \uAE00\uC790\uC218\uB97C \uCC44\uC6B0\uAE30 \uC704\uD574 \uD5C8\uC704 \uB0B4\uC6A9\uC744 \uCD94\uAC00\uD558\uB294 \uAC83\uC740 \uAE08\uC9C0
+- \uC785\uB825 \uB0B4\uC6A9\uC744 \uAD6C\uCCB4\uD654\uD558\uAC70\uB098 \uD45C\uD604\uC744 \uD48D\uBD80\uD558\uAC8C \uD558\uB294 \uAC83\uC740 \uD5C8\uC6A9
+- \uC785\uB825\uC5D0 \uC5C6\uB294 \uC0C8\uB85C\uC6B4 \uC0AC\uC2E4\uC744 \uCC3D\uC791\uD558\uB294 \uAC83\uC740 \uAE08\uC9C0
+
 [\uD575\uC2EC \uC6D0\uCE59 - \uB300\uD559 \uC785\uD559\uC0AC\uC815\uAD00 \uD3C9\uAC00 \uAE30\uC900 \uBC18\uC601]
 \uB300\uD559\uC740 \uC0DD\uD65C\uAE30\uB85D\uBD80\uB97C \uD1B5\uD574 \uB2E4\uC74C \uC5ED\uB7C9\uC744 \uD3C9\uAC00\uD569\uB2C8\uB2E4:
 1. \uD559\uC5C5\uC5ED\uB7C9: \uD559\uC5C5\uD0DC\uB3C4, \uD0D0\uAD6C\uB825, \uC9C0\uC801\uD638\uAE30\uC2EC
@@ -312,17 +322,26 @@ var SYSTEM_PROMPT = `\uB2F9\uC2E0\uC740 \uD559\uC0DD\uC744 \uAE4A\uC774 \uC774\u
 - "\uBC1C\uD45C \uD6C4 \uC9C8\uC758\uC751\uB2F5\uC5D0\uC11C \uB17C\uB9AC\uC801\uC73C\uB85C \uB2F5\uBCC0\uD558\uBA70 \uC2EC\uD654 \uD0D0\uAD6C \uACC4\uD68D\uC744 \uBC1D\uD798"
 
 [\uAE00\uC790\uC218 \uC900\uC218 - \uB9E4\uC6B0 \uC911\uC694]
-- \uBC18\uB4DC\uC2DC \uBAA9\uD45C \uAE00\uC790\uC218\uC5D0 \uB3C4\uB2EC\uD558\uB3C4\uB85D \uC791\uC131\uD558\uC138\uC694
-- \uC785\uB825\uB41C \uD65C\uB3D9 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4, \uD559\uC0DD\uC758 \uD0DC\uB3C4, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218\uB97C \uCC44\uC6B0\uC138\uC694
-- \uBAA9\uD45C \uAE00\uC790\uC218\uC758 90% \uBBF8\uB9CC\uC740 \uBD80\uC801\uC808\uD569\uB2C8\uB2E4
+- \uBAA9\uD45C \uAE00\uC790\uC218\uC758 \xB115% \uBC94\uC704 \uB0B4\uB85C \uBC18\uB4DC\uC2DC \uC791\uC131 (\uC608: 300\uC790 \uBAA9\uD45C \uC2DC 255~345\uC790)
+- \uAE00\uC790\uC218 \uBD80\uC871 \uC2DC: \uC785\uB825 \uB0B4\uC6A9\uC744 \uB354 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220, \uB9E5\uB77D \uC124\uBA85 \uCD94\uAC00, \uD559\uC2B5 \uACFC\uC815 \uC0C1\uC138\uD654
+- \uAE00\uC790\uC218 \uCD08\uACFC \uC2DC: \uC911\uBCF5 \uD45C\uD604 \uC81C\uAC70, \uD575\uC2EC \uB0B4\uC6A9 \uC911\uC2EC\uC73C\uB85C \uC555\uCD95
+- \uC0AC\uC2E4 \uAE30\uBC18 \uC6D0\uCE59 \uC720\uC9C0: \uC5C6\uB294 \uD65C\uB3D9\uC744 \uB9CC\uB4E4\uC9C0 \uC54A\uB418, \uC785\uB825\uB41C \uB0B4\uC6A9\uC740 \uCDA9\uBD84\uD788 \uC0C1\uC138\uD558\uAC8C \uD45C\uD604
+- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uCD5C\uC18C \uBAA9\uD45C\uC758 70% \uC774\uC0C1\uC740 \uC791\uC131 (\uC785\uB825 \uB0B4\uC6A9\uC744 \uD48D\uBD80\uD558\uAC8C \uC11C\uC220)
 
 [\uCD9C\uB825 \uD615\uC2DD]
 - \uCD94\uAC00 \uC124\uBA85\uC774\uB098 \uBA38\uB9AC\uB9D0 \uC5C6\uC774 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCF8\uBB38\uB9CC \uCD9C\uB825
 - \uC790\uC5F0\uC2A4\uB7EC\uC6B4 \uD55C \uBB38\uB2E8\uC73C\uB85C \uAD6C\uC131`;
 async function callOpenAI(apiKey, modelId, activity, targetCharCount) {
-  const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
-- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
+  const userPrompt = `[\uAE00\uC790\uC218 \uC81C\uC57D - \uBC18\uB4DC\uC2DC \uC900\uC218]
+- \uBAA9\uD45C: ${targetCharCount}\uC790 (\uD5C8\uC6A9 \uBC94\uC704: ${minChars}~${maxChars}\uC790)
+- ${minChars}\uC790 \uBBF8\uB9CC\uC774\uBA74 \uC785\uB825 \uB0B4\uC6A9\uC744 \uB354 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uAE00\uC790\uC218 \uCDA9\uC871
+- ${maxChars}\uC790 \uCD08\uACFC\uD558\uBA74 \uD575\uC2EC\uB9CC \uB0A8\uAE30\uACE0 \uC555\uCD95
+
+[\uC791\uC131 \uC6D0\uCE59]
+- \uC785\uB825\uB41C \uD65C\uB3D9 \uB0B4\uC6A9\uB9CC \uC0AC\uC6A9 (\uC0C8\uB85C\uC6B4 \uD65C\uB3D9 \uCC3D\uC791 \uAE08\uC9C0)
+- \uB2E8, \uC785\uB825 \uB0B4\uC6A9\uC744 \uC0C1\uC138\uD558\uACE0 \uD48D\uBD80\uD558\uAC8C \uD45C\uD604\uD558\uB294 \uAC83\uC740 \uD5C8\uC6A9
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -330,7 +349,7 @@ async function callOpenAI(apiKey, modelId, activity, targetCharCount) {
 \uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
 [\uCD9C\uB825]
-\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCF8\uBB38\uB9CC \uCD9C\uB825 (${minChars}~${maxChars}\uC790 \uBC94\uC704 \uC900\uC218)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: "https://api.openai.com/v1/chat/completions",
     method: "POST",
@@ -354,9 +373,16 @@ async function callOpenAI(apiKey, modelId, activity, targetCharCount) {
   return response.json.choices[0].message.content.trim();
 }
 async function callClaude(apiKey, modelId, activity, targetCharCount) {
-  const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
-- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
+  const userPrompt = `[\uAE00\uC790\uC218 \uC81C\uC57D - \uBC18\uB4DC\uC2DC \uC900\uC218]
+- \uBAA9\uD45C: ${targetCharCount}\uC790 (\uD5C8\uC6A9 \uBC94\uC704: ${minChars}~${maxChars}\uC790)
+- ${minChars}\uC790 \uBBF8\uB9CC\uC774\uBA74 \uC785\uB825 \uB0B4\uC6A9\uC744 \uB354 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uAE00\uC790\uC218 \uCDA9\uC871
+- ${maxChars}\uC790 \uCD08\uACFC\uD558\uBA74 \uD575\uC2EC\uB9CC \uB0A8\uAE30\uACE0 \uC555\uCD95
+
+[\uC791\uC131 \uC6D0\uCE59]
+- \uC785\uB825\uB41C \uD65C\uB3D9 \uB0B4\uC6A9\uB9CC \uC0AC\uC6A9 (\uC0C8\uB85C\uC6B4 \uD65C\uB3D9 \uCC3D\uC791 \uAE08\uC9C0)
+- \uB2E8, \uC785\uB825 \uB0B4\uC6A9\uC744 \uC0C1\uC138\uD558\uACE0 \uD48D\uBD80\uD558\uAC8C \uD45C\uD604\uD558\uB294 \uAC83\uC740 \uD5C8\uC6A9
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -364,7 +390,7 @@ async function callClaude(apiKey, modelId, activity, targetCharCount) {
 \uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
 [\uCD9C\uB825]
-\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCF8\uBB38\uB9CC \uCD9C\uB825 (${minChars}~${maxChars}\uC790 \uBC94\uC704 \uC900\uC218)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: "https://api.anthropic.com/v1/messages",
     method: "POST",
@@ -386,11 +412,18 @@ async function callClaude(apiKey, modelId, activity, targetCharCount) {
   return response.json.content[0].text.trim();
 }
 async function callGemini(apiKey, modelId, activity, targetCharCount) {
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
   const userPrompt = `${SYSTEM_PROMPT}
 
-[\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
-- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
+[\uAE00\uC790\uC218 \uC81C\uC57D - \uBC18\uB4DC\uC2DC \uC900\uC218]
+- \uBAA9\uD45C: ${targetCharCount}\uC790 (\uD5C8\uC6A9 \uBC94\uC704: ${minChars}~${maxChars}\uC790)
+- ${minChars}\uC790 \uBBF8\uB9CC\uC774\uBA74 \uC785\uB825 \uB0B4\uC6A9\uC744 \uB354 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uAE00\uC790\uC218 \uCDA9\uC871
+- ${maxChars}\uC790 \uCD08\uACFC\uD558\uBA74 \uD575\uC2EC\uB9CC \uB0A8\uAE30\uACE0 \uC555\uCD95
+
+[\uC791\uC131 \uC6D0\uCE59]
+- \uC785\uB825\uB41C \uD65C\uB3D9 \uB0B4\uC6A9\uB9CC \uC0AC\uC6A9 (\uC0C8\uB85C\uC6B4 \uD65C\uB3D9 \uCC3D\uC791 \uAE08\uC9C0)
+- \uB2E8, \uC785\uB825 \uB0B4\uC6A9\uC744 \uC0C1\uC138\uD558\uACE0 \uD48D\uBD80\uD558\uAC8C \uD45C\uD604\uD558\uB294 \uAC83\uC740 \uD5C8\uC6A9
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -398,7 +431,7 @@ async function callGemini(apiKey, modelId, activity, targetCharCount) {
 \uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
 [\uCD9C\uB825]
-\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCF8\uBB38\uB9CC \uCD9C\uB825 (${minChars}~${maxChars}\uC790 \uBC94\uC704 \uC900\uC218)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId || "gemini-1.5-flash"}:generateContent?key=${apiKey}`,
     method: "POST",
@@ -423,9 +456,16 @@ async function callGemini(apiKey, modelId, activity, targetCharCount) {
   return response.json.candidates[0].content.parts[0].text.trim();
 }
 async function callGrok(apiKey, modelId, activity, targetCharCount) {
-  const userPrompt = `[\uC81C\uC57D \uC870\uAC74]
-- \uBAA9\uD45C \uAE00\uC790 \uC218: ${targetCharCount}\uC790 (\uBC18\uB4DC\uC2DC ${Math.round(targetCharCount * 0.9)}\uC790 \uC774\uC0C1 \uC791\uC131)
-- \uC785\uB825 \uB0B4\uC6A9\uC774 \uC9E7\uB354\uB77C\uB3C4 \uD559\uC0DD\uC758 \uD0D0\uAD6C\uB825, \uC5ED\uB7C9, \uC131\uC7A5 \uAC00\uB2A5\uC131\uC744 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uBAA9\uD45C \uAE00\uC790\uC218 \uB2EC\uC131
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
+  const userPrompt = `[\uAE00\uC790\uC218 \uC81C\uC57D - \uBC18\uB4DC\uC2DC \uC900\uC218]
+- \uBAA9\uD45C: ${targetCharCount}\uC790 (\uD5C8\uC6A9 \uBC94\uC704: ${minChars}~${maxChars}\uC790)
+- ${minChars}\uC790 \uBBF8\uB9CC\uC774\uBA74 \uC785\uB825 \uB0B4\uC6A9\uC744 \uB354 \uAD6C\uCCB4\uC801\uC73C\uB85C \uC11C\uC220\uD558\uC5EC \uAE00\uC790\uC218 \uCDA9\uC871
+- ${maxChars}\uC790 \uCD08\uACFC\uD558\uBA74 \uD575\uC2EC\uB9CC \uB0A8\uAE30\uACE0 \uC555\uCD95
+
+[\uC791\uC131 \uC6D0\uCE59]
+- \uC785\uB825\uB41C \uD65C\uB3D9 \uB0B4\uC6A9\uB9CC \uC0AC\uC6A9 (\uC0C8\uB85C\uC6B4 \uD65C\uB3D9 \uCC3D\uC791 \uAE08\uC9C0)
+- \uB2E8, \uC785\uB825 \uB0B4\uC6A9\uC744 \uC0C1\uC138\uD558\uACE0 \uD48D\uBD80\uD558\uAC8C \uD45C\uD604\uD558\uB294 \uAC83\uC740 \uD5C8\uC6A9
 
 [\uC785\uB825]
 \uD559\uBC88: ${activity.studentId}
@@ -433,7 +473,7 @@ async function callGrok(apiKey, modelId, activity, targetCharCount) {
 \uD65C\uB3D9\uB0B4\uC6A9: ${activity.activityContent}
 
 [\uCD9C\uB825]
-\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uB9CC \uCD9C\uB825 (\uCD94\uAC00 \uC124\uBA85 \uC5C6\uC774)`;
+\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCF8\uBB38\uB9CC \uCD9C\uB825 (${minChars}~${maxChars}\uC790 \uBC94\uC704 \uC900\uC218)`;
   const response = await (0, import_obsidian.requestUrl)({
     url: "https://api.x.ai/v1/chat/completions",
     method: "POST",
@@ -838,7 +878,7 @@ var StudentActivitySettingTab = class extends import_obsidian.PluginSettingTab {
       });
     });
     new import_obsidian.Setting(containerEl).setName("\uAE30\uBCF8 \uBAA9\uD45C \uAE00\uC790 \uC218").setDesc("\uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC758 \uAE30\uBCF8 \uBAA9\uD45C \uAE00\uC790 \uC218\uB97C \uC124\uC815\uD569\uB2C8\uB2E4.").addText((text) => {
-      text.setPlaceholder("500").setValue(String(this.plugin.settings.targetCharCount)).onChange(async (value) => {
+      text.setPlaceholder("300").setValue(String(this.plugin.settings.targetCharCount)).onChange(async (value) => {
         const num = parseInt(value);
         if (!isNaN(num) && num > 0) {
           this.plugin.settings.targetCharCount = num;
@@ -926,8 +966,28 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
       this.processConversion(data, charCount);
     }).open();
   }
-  async processConversion(data, targetCharCount) {
-    const activities = parseTSV(data);
+  /**
+   * AI API 호출 (제공자별 분기)
+   */
+  async callAI(activity, targetCharCount) {
+    const { apiKey, apiProvider, modelId } = this.settings;
+    switch (apiProvider) {
+      case "openai":
+        return callOpenAI(apiKey, modelId || DEFAULT_MODELS.openai, activity, targetCharCount);
+      case "claude":
+        return callClaude(apiKey, modelId || DEFAULT_MODELS.claude, activity, targetCharCount);
+      case "gemini":
+        return callGemini(apiKey, modelId || DEFAULT_MODELS.gemini, activity, targetCharCount);
+      case "grok":
+        return callGrok(apiKey, modelId || DEFAULT_MODELS.grok, activity, targetCharCount);
+      default:
+        throw new Error(`\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 AI \uC81C\uACF5\uC790: ${apiProvider}`);
+    }
+  }
+  /**
+   * 공통 변환 처리 로직
+   */
+  async processActivities(activities, targetCharCount) {
     if (activities.length === 0) {
       new import_obsidian.Notice("\uBCC0\uD658\uD560 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
       return;
@@ -940,43 +1000,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
       const activity = activities[i];
       progressModal.updateProgress(i + 1, activities.length, activity.studentName);
       try {
-        let observation;
-        switch (this.settings.apiProvider) {
-          case "openai":
-            observation = await callOpenAI(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.openai,
-              activity,
-              targetCharCount
-            );
-            break;
-          case "claude":
-            observation = await callClaude(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.claude,
-              activity,
-              targetCharCount
-            );
-            break;
-          case "gemini":
-            observation = await callGemini(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.gemini,
-              activity,
-              targetCharCount
-            );
-            break;
-          case "grok":
-            observation = await callGrok(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.grok,
-              activity,
-              targetCharCount
-            );
-            break;
-          default:
-            throw new Error(`\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 AI \uC81C\uACF5\uC790: ${this.settings.apiProvider}`);
-        }
+        const observation = await this.callAI(activity, targetCharCount);
         records.push({
           studentId: activity.studentId,
           studentName: activity.studentName,
@@ -998,7 +1022,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
         });
       }
       if (i < activities.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
     }
     progressModal.markLastStudentComplete();
@@ -1010,93 +1034,11 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
       new import_obsidian.Notice(`${records.length}\uBA85\uC758 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uC644\uB8CC!`);
     }
   }
-  /**
-   * 스마트 파싱을 사용하는 변환 처리 (선택 영역 변환용)
-   * - 학번/이름 없는 데이터도 가상 학번/이름으로 처리
-   */
+  async processConversion(data, targetCharCount) {
+    await this.processActivities(parseTSV(data), targetCharCount);
+  }
   async processConversionSmart(data, targetCharCount) {
-    const activities = parseSmartTSV(data);
-    if (activities.length === 0) {
-      new import_obsidian.Notice("\uBCC0\uD658\uD560 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
-      return;
-    }
-    const progressModal = new ProgressModal(this.app);
-    progressModal.open();
-    const records = [];
-    let errorCount = 0;
-    for (let i = 0; i < activities.length; i++) {
-      const activity = activities[i];
-      progressModal.updateProgress(i + 1, activities.length, activity.studentName);
-      try {
-        let observation;
-        switch (this.settings.apiProvider) {
-          case "openai":
-            observation = await callOpenAI(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.openai,
-              activity,
-              targetCharCount
-            );
-            break;
-          case "claude":
-            observation = await callClaude(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.claude,
-              activity,
-              targetCharCount
-            );
-            break;
-          case "gemini":
-            observation = await callGemini(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.gemini,
-              activity,
-              targetCharCount
-            );
-            break;
-          case "grok":
-            observation = await callGrok(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.grok,
-              activity,
-              targetCharCount
-            );
-            break;
-          default:
-            throw new Error(`\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 AI \uC81C\uACF5\uC790: ${this.settings.apiProvider}`);
-        }
-        records.push({
-          studentId: activity.studentId,
-          studentName: activity.studentName,
-          activityContent: activity.activityContent,
-          observation,
-          charCount: countChars(observation),
-          byteCount: countBytes(observation)
-        });
-      } catch (error) {
-        console.error(`Error processing ${activity.studentName}:`, error);
-        errorCount++;
-        records.push({
-          studentId: activity.studentId,
-          studentName: activity.studentName,
-          activityContent: activity.activityContent,
-          observation: `[\uBCC0\uD658 \uC2E4\uD328: ${error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958"}]`,
-          charCount: 0,
-          byteCount: 0
-        });
-      }
-      if (i < activities.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-    }
-    progressModal.markLastStudentComplete();
-    progressModal.close();
-    await this.createResultNote(records);
-    if (errorCount > 0) {
-      new import_obsidian.Notice(`\uBCC0\uD658 \uC644\uB8CC! (${records.length - errorCount}\uBA85 \uC131\uACF5, ${errorCount}\uBA85 \uC2E4\uD328)`);
-    } else {
-      new import_obsidian.Notice(`${records.length}\uBA85\uC758 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uC644\uB8CC!`);
-    }
+    await this.processActivities(parseSmartTSV(data), targetCharCount);
   }
   async createResultNote(records) {
     const now = new Date();
@@ -1113,36 +1055,143 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
     }
     const tsvData = generateTSVData(records);
     const encodedTSV = Buffer.from(tsvData).toString("base64");
-    const content = `# \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uACB0\uACFC
-
-\uC0DD\uC131\uC77C\uC2DC: ${now.toLocaleString("ko-KR")}
-\uCD1D \uC778\uC6D0: ${records.length}\uBA85
-
-## \u{1F4CB} \uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uB85C \uBCF5\uC0AC
-
-<div class="student-activity-copy-section">
-<button class="student-activity-copy-btn" data-tsv="${encodedTSV}">
-\u{1F4CB} \uD074\uB9AD\uD558\uC5EC \uBCF5\uC0AC\uD558\uAE30
-</button>
-<span class="copy-status"></span>
+    const successRecords = records.filter((r) => r.charCount > 0);
+    const failedRecords = records.filter((r) => r.charCount === 0);
+    const avgChars = successRecords.length > 0 ? Math.round(successRecords.reduce((sum, r) => sum + r.charCount, 0) / successRecords.length) : 0;
+    const avgBytes = successRecords.length > 0 ? Math.round(successRecords.reduce((sum, r) => sum + r.byteCount, 0) / successRecords.length) : 0;
+    const minChars = successRecords.length > 0 ? Math.min(...successRecords.map((r) => r.charCount)) : 0;
+    const maxChars = successRecords.length > 0 ? Math.max(...successRecords.map((r) => r.charCount)) : 0;
+    const studentCards = records.map((r, idx) => {
+      const statusIcon = r.charCount > 0 ? "\u2705" : "\u274C";
+      const statusClass = r.charCount > 0 ? "success" : "failed";
+      return `
+<div class="sa-student-card ${statusClass}" data-student-index="${idx}">
+<div class="sa-card-header">
+<input type="checkbox" class="sa-card-checkbox" data-checkbox-index="${idx}" />
+<span class="sa-card-number">${idx + 1}</span>
+<span class="sa-card-id">${r.studentId}</span>
+<span class="sa-card-name">${r.studentName}</span>
+<span class="sa-card-status">${statusIcon}</span>
+<button class="sa-card-print-btn" data-print-index="${idx}">\u{1F5A8}\uFE0F \uCD9C\uB825</button>
 </div>
+<div class="sa-card-section">
+<div class="sa-card-label">\u{1F4DD} \uD559\uC0DD\uD65C\uB3D9\uAE30\uB85D</div>
+<div class="sa-card-content activity">${r.activityContent}</div>
+</div>
+<div class="sa-card-section">
+<div class="sa-card-label">\u{1F4CB} \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D</div>
+<div class="sa-card-content observation">${r.observation}</div>
+</div>
+<div class="sa-card-footer">
+<span class="sa-card-stat">\u{1F4CA} ${r.charCount}\uC790</span>
+<span class="sa-card-stat">\u{1F4BE} ${r.byteCount}\uBC14\uC774\uD2B8</span>
+</div>
+</div>`;
+    }).join("\n");
+    const content = `---
+title: \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uACB0\uACFC
+created: ${dateStr}
+type: \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D
+students: ${records.length}
+ai_provider: ${this.settings.apiProvider}
+model: ${this.settings.modelId}
+---
 
-> \uC704 \uBC84\uD2BC\uC744 \uD074\uB9AD\uD558\uBA74 TSV \uB370\uC774\uD130\uAC00 \uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uBCF5\uC0AC\uB429\uB2C8\uB2E4.
-> \uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uC5D0\uC11C Ctrl+V\uB85C \uBD99\uC5EC\uB123\uC73C\uBA74 \uC5F4\uC774 \uC790\uB3D9\uC73C\uB85C \uAD6C\uBD84\uB429\uB2C8\uB2E4.
+<div class="sa-result-container">
+
+# \u2728 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uBCC0\uD658 \uACB0\uACFC
+
+<div class="sa-meta-section">
+<div class="sa-meta-item">
+<span class="sa-meta-icon">\u{1F4C5}</span>
+<span class="sa-meta-label">\uC0DD\uC131\uC77C\uC2DC</span>
+<span class="sa-meta-value">${now.toLocaleString("ko-KR")}</span>
+</div>
+<div class="sa-meta-item">
+<span class="sa-meta-icon">\u{1F916}</span>
+<span class="sa-meta-label">AI \uBAA8\uB378</span>
+<span class="sa-meta-value">${this.settings.apiProvider.toUpperCase()} / ${this.settings.modelId}</span>
+</div>
+<div class="sa-meta-item">
+<span class="sa-meta-icon">\u{1F3AF}</span>
+<span class="sa-meta-label">\uBAA9\uD45C \uAE00\uC790\uC218</span>
+<span class="sa-meta-value">${this.settings.targetCharCount}\uC790</span>
+</div>
+</div>
 
 ---
 
-## \uACB0\uACFC \uD14C\uC774\uBE14
+## \u{1F4CA} \uBCC0\uD658 \uD1B5\uACC4
+
+<div class="sa-stats-grid">
+<div class="sa-stat-card primary">
+<div class="sa-stat-icon">\u{1F465}</div>
+<div class="sa-stat-value">${records.length}\uBA85</div>
+<div class="sa-stat-label">\uCD1D \uC778\uC6D0</div>
+</div>
+<div class="sa-stat-card success">
+<div class="sa-stat-icon">\u2705</div>
+<div class="sa-stat-value">${successRecords.length}\uBA85</div>
+<div class="sa-stat-label">\uBCC0\uD658 \uC131\uACF5</div>
+</div>
+${failedRecords.length > 0 ? `<div class="sa-stat-card error">
+<div class="sa-stat-icon">\u274C</div>
+<div class="sa-stat-value">${failedRecords.length}\uBA85</div>
+<div class="sa-stat-label">\uBCC0\uD658 \uC2E4\uD328</div>
+</div>` : ""}
+<div class="sa-stat-card info">
+<div class="sa-stat-icon">\u{1F4DD}</div>
+<div class="sa-stat-value">${avgChars}\uC790</div>
+<div class="sa-stat-label">\uD3C9\uADE0 \uAE00\uC790\uC218</div>
+</div>
+<div class="sa-stat-card info">
+<div class="sa-stat-icon">\u{1F4BE}</div>
+<div class="sa-stat-value">${avgBytes}</div>
+<div class="sa-stat-label">\uD3C9\uADE0 \uBC14\uC774\uD2B8</div>
+</div>
+<div class="sa-stat-card">
+<div class="sa-stat-icon">\u{1F4C9}</div>
+<div class="sa-stat-value">${minChars}~${maxChars}</div>
+<div class="sa-stat-label">\uAE00\uC790\uC218 \uBC94\uC704</div>
+</div>
+</div>
+
+---
+
+## \u{1F4CB} \uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uB85C \uBCF5\uC0AC
+
+<div class="sa-copy-section">
+<button class="student-activity-copy-btn" data-tsv="${encodedTSV}">
+\u{1F4CB} \uD074\uB9AD\uD558\uC5EC \uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uBCF5\uC0AC
+</button>
+<p class="sa-copy-hint">\uBCF5\uC0AC \uD6C4 \uAD6C\uAE00 \uC2A4\uD504\uB808\uB4DC\uC2DC\uD2B8\uC5D0\uC11C <kbd>Ctrl</kbd>+<kbd>V</kbd>\uB85C \uBD99\uC5EC\uB123\uAE30</p>
+</div>
+
+---
+
+## \u{1F5A8}\uFE0F \uCD9C\uB825\uD558\uAE30
+
+<div class="sa-print-section">
+<button class="sa-select-btn" data-select-all="true">\u2611\uFE0F \uC804\uCCB4 \uC120\uD0DD</button>
+<button class="sa-select-btn" data-select-all="false">\u2610 \uC804\uCCB4 \uD574\uC81C</button>
+<button class="sa-print-btn print-selected" data-print-selected="true">\u{1F5A8}\uFE0F \uC120\uD0DD \uCD9C\uB825</button>
+<button class="sa-print-btn print-all" data-print-all="true">\u{1F5A8}\uFE0F \uC804\uCCB4 \uCD9C\uB825</button>
+</div>
+<p class="sa-print-hint">\u{1F4A1} \uD559\uC0DD \uCE74\uB4DC\uC758 \uCCB4\uD06C\uBC15\uC2A4\uB97C \uC120\uD0DD\uD55C \uD6C4 '\uC120\uD0DD \uCD9C\uB825'\uC744 \uD074\uB9AD\uD558\uC138\uC694</p>
+
+---
+
+## \u{1F4D1} \uBCC0\uD658 \uACB0\uACFC \uC0C1\uC138
+
+${studentCards}
+
+---
+
+## \u{1F4CB} \uACB0\uACFC \uD14C\uC774\uBE14
 
 ${generateMarkdownTable(records)}
 
-## \uD1B5\uACC4
-
-| \uD56D\uBAA9 | \uAC12 |
-|------|-----|
-| \uCD1D \uC778\uC6D0 | ${records.length}\uBA85 |
-| \uD3C9\uADE0 \uAE00\uC790 \uC218 | ${Math.round(records.reduce((sum, r) => sum + r.charCount, 0) / records.length)}\uC790 |
-| \uD3C9\uADE0 \uBC14\uC774\uD2B8 \uC218 | ${Math.round(records.reduce((sum, r) => sum + r.byteCount, 0) / records.length)} \uBC14\uC774\uD2B8 |
+</div>
 `;
     const file = await this.app.vault.create(filePath, content);
     const leaf = this.app.workspace.getLeaf(false);
@@ -1177,6 +1226,152 @@ ${generateMarkdownTable(records)}
           }
         });
       });
+      const printButtons = document.querySelectorAll(".sa-card-print-btn");
+      printButtons.forEach((btn) => {
+        if (btn.hasAttribute("data-listener-attached"))
+          return;
+        btn.setAttribute("data-listener-attached", "true");
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const button = e.currentTarget;
+          const printIndex = button.getAttribute("data-print-index");
+          if (printIndex === null)
+            return;
+          this.printIndividualStudent(parseInt(printIndex));
+        });
+      });
+      const printAllButtons = document.querySelectorAll(".sa-print-btn.print-all");
+      printAllButtons.forEach((btn) => {
+        if (btn.hasAttribute("data-listener-attached"))
+          return;
+        btn.setAttribute("data-listener-attached", "true");
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.printAllStudents();
+        });
+      });
+      const printSelectedButtons = document.querySelectorAll(".sa-print-btn.print-selected");
+      printSelectedButtons.forEach((btn) => {
+        if (btn.hasAttribute("data-listener-attached"))
+          return;
+        btn.setAttribute("data-listener-attached", "true");
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.printSelectedStudents();
+        });
+      });
+      const selectButtons = document.querySelectorAll(".sa-select-btn");
+      selectButtons.forEach((btn) => {
+        if (btn.hasAttribute("data-listener-attached"))
+          return;
+        btn.setAttribute("data-listener-attached", "true");
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const button = e.currentTarget;
+          const selectAll = button.getAttribute("data-select-all") === "true";
+          this.toggleAllCheckboxes(selectAll);
+        });
+      });
     }, 500);
+  }
+  /**
+   * 개별 학생 출력
+   */
+  printIndividualStudent(studentIndex) {
+    var _a;
+    const container = document.querySelector(".sa-result-container");
+    if (!container) {
+      new import_obsidian.Notice("\uCD9C\uB825\uD560 \uB0B4\uC6A9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    const allCards = container.querySelectorAll(".sa-student-card");
+    allCards.forEach((card) => card.classList.remove("print-target"));
+    const targetCard = container.querySelector(`.sa-student-card[data-student-index="${studentIndex}"]`);
+    if (targetCard) {
+      targetCard.classList.add("print-target");
+    }
+    container.classList.remove("print-all");
+    container.classList.add("print-individual");
+    const studentName = ((_a = targetCard == null ? void 0 : targetCard.querySelector(".sa-card-name")) == null ? void 0 : _a.textContent) || "\uD559\uC0DD";
+    new import_obsidian.Notice(`\u{1F5A8}\uFE0F ${studentName} \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uCD9C\uB825 \uC911...`);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        container.classList.remove("print-individual");
+        allCards.forEach((card) => card.classList.remove("print-target"));
+      }, 1e3);
+    }, 100);
+  }
+  /**
+   * 전체 학생 출력 (교사용)
+   */
+  printAllStudents() {
+    const container = document.querySelector(".sa-result-container");
+    if (!container) {
+      new import_obsidian.Notice("\uCD9C\uB825\uD560 \uB0B4\uC6A9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    container.classList.remove("print-individual", "print-selected");
+    container.classList.add("print-all");
+    new import_obsidian.Notice("\u{1F5A8}\uFE0F \uC804\uCCB4 \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uCD9C\uB825 \uC911...");
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        container.classList.remove("print-all");
+      }, 1e3);
+    }, 100);
+  }
+  /**
+   * 체크박스 전체 선택/해제
+   */
+  toggleAllCheckboxes(selectAll) {
+    const checkboxes = document.querySelectorAll(".sa-card-checkbox");
+    checkboxes.forEach((checkbox) => {
+      checkbox.checked = selectAll;
+    });
+    const count = selectAll ? checkboxes.length : 0;
+    new import_obsidian.Notice(selectAll ? `\u2611\uFE0F ${count}\uBA85 \uC804\uCCB4 \uC120\uD0DD\uB428` : "\u2610 \uC804\uCCB4 \uC120\uD0DD \uD574\uC81C\uB428");
+  }
+  /**
+   * 선택된 학생들 출력
+   */
+  printSelectedStudents() {
+    const container = document.querySelector(".sa-result-container");
+    if (!container) {
+      new import_obsidian.Notice("\uCD9C\uB825\uD560 \uB0B4\uC6A9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    const checkboxes = document.querySelectorAll(".sa-card-checkbox:checked");
+    if (checkboxes.length === 0) {
+      new import_obsidian.Notice("\u26A0\uFE0F \uCD9C\uB825\uD560 \uD559\uC0DD\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694.");
+      return;
+    }
+    const allCards = container.querySelectorAll(".sa-student-card");
+    allCards.forEach((card) => card.classList.remove("print-target"));
+    const selectedNames = [];
+    checkboxes.forEach((checkbox) => {
+      var _a;
+      const index = checkbox.getAttribute("data-checkbox-index");
+      if (index !== null) {
+        const card = container.querySelector(`.sa-student-card[data-student-index="${index}"]`);
+        if (card) {
+          card.classList.add("print-target");
+          const name = (_a = card.querySelector(".sa-card-name")) == null ? void 0 : _a.textContent;
+          if (name)
+            selectedNames.push(name);
+        }
+      }
+    });
+    container.classList.remove("print-all", "print-individual");
+    container.classList.add("print-selected");
+    new import_obsidian.Notice(`\u{1F5A8}\uFE0F ${checkboxes.length}\uBA85 \uC120\uD0DD \uCD9C\uB825 \uC911...`);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        container.classList.remove("print-selected");
+        allCards.forEach((card) => card.classList.remove("print-target"));
+      }, 1e3);
+    }, 100);
   }
 };

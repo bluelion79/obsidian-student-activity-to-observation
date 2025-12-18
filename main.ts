@@ -105,7 +105,7 @@ interface ObservationRecord {
 const DEFAULT_SETTINGS: StudentActivityPluginSettings = {
   apiProvider: 'openai',
   apiKey: '',
-  targetCharCount: 500,
+  targetCharCount: 300,
   outputFolder: '',
   modelId: 'gpt-4o-mini',
 };
@@ -285,6 +285,16 @@ function generateTSVData(records: ObservationRecord[]): string {
 const SYSTEM_PROMPT = `당신은 학생을 깊이 이해하고 애정을 가지고 관찰하는 한국 고등학교 담임교사입니다.
 학생의 활동 내용을 바탕으로 교사 관찰 기록을 작성해주세요.
 
+[최우선 원칙 - 사실 기반 작성 (절대 준수)]
+※ 이 규칙은 다른 모든 규칙보다 우선합니다.
+- 입력된 학생 활동 기록에 명시된 내용만 사용하여 작성
+- 학생이 실제로 수행한 활동만 기록 (추측, 상상, 허구 금지)
+- 입력에 없는 활동, 성과, 역할을 절대 추가하지 않음
+- 활동 내용이 짧더라도 없는 내용을 만들어내지 않음
+- 글자수를 채우기 위해 허위 내용을 추가하는 것은 금지
+- 입력 내용을 구체화하거나 표현을 풍부하게 하는 것은 허용
+- 입력에 없는 새로운 사실을 창작하는 것은 금지
+
 [핵심 원칙 - 대학 입학사정관 평가 기준 반영]
 대학은 생활기록부를 통해 다음 역량을 평가합니다:
 1. 학업역량: 학업태도, 탐구력, 지적호기심
@@ -364,9 +374,11 @@ const SYSTEM_PROMPT = `당신은 학생을 깊이 이해하고 애정을 가지�
 - "발표 후 질의응답에서 논리적으로 답변하며 심화 탐구 계획을 밝힘"
 
 [글자수 준수 - 매우 중요]
-- 반드시 목표 글자수에 도달하도록 작성하세요
-- 입력된 활동 내용이 짧더라도, 학생의 태도, 역량, 성장 가능성을 구체적으로 서술하여 목표 글자수를 채우세요
-- 목표 글자수의 90% 미만은 부적절합니다
+- 목표 글자수의 ±15% 범위 내로 반드시 작성 (예: 300자 목표 시 255~345자)
+- 글자수 부족 시: 입력 내용을 더 구체적으로 서술, 맥락 설명 추가, 학습 과정 상세화
+- 글자수 초과 시: 중복 표현 제거, 핵심 내용 중심으로 압축
+- 사실 기반 원칙 유지: 없는 활동을 만들지 않되, 입력된 내용은 충분히 상세하게 표현
+- 입력 내용이 짧더라도 최소 목표의 70% 이상은 작성 (입력 내용을 풍부하게 서술)
 
 [출력 형식]
 - 추가 설명이나 머리말 없이 교사관찰기록 본문만 출력
@@ -378,9 +390,17 @@ async function callOpenAI(
   activity: StudentActivity,
   targetCharCount: number
 ): Promise<string> {
-  const userPrompt = `[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (반드시 ${Math.round(targetCharCount * 0.9)}자 이상 작성)
-- 입력 내용이 짧더라도 학생의 탐구력, 역량, 성장 가능성을 구체적으로 서술하여 목표 글자수 달성
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
+
+  const userPrompt = `[글자수 제약 - 반드시 준수]
+- 목표: ${targetCharCount}자 (허용 범위: ${minChars}~${maxChars}자)
+- ${minChars}자 미만이면 입력 내용을 더 구체적으로 서술하여 글자수 충족
+- ${maxChars}자 초과하면 핵심만 남기고 압축
+
+[작성 원칙]
+- 입력된 활동 내용만 사용 (새로운 활동 창작 금지)
+- 단, 입력 내용을 상세하고 풍부하게 표현하는 것은 허용
 
 [입력]
 학번: ${activity.studentId}
@@ -388,7 +408,7 @@ async function callOpenAI(
 활동내용: ${activity.activityContent}
 
 [출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+교사관찰기록 본문만 출력 (${minChars}~${maxChars}자 범위 준수)`;
 
   const response = await requestUrl({
     url: 'https://api.openai.com/v1/chat/completions',
@@ -421,9 +441,17 @@ async function callClaude(
   activity: StudentActivity,
   targetCharCount: number
 ): Promise<string> {
-  const userPrompt = `[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (반드시 ${Math.round(targetCharCount * 0.9)}자 이상 작성)
-- 입력 내용이 짧더라도 학생의 탐구력, 역량, 성장 가능성을 구체적으로 서술하여 목표 글자수 달성
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
+
+  const userPrompt = `[글자수 제약 - 반드시 준수]
+- 목표: ${targetCharCount}자 (허용 범위: ${minChars}~${maxChars}자)
+- ${minChars}자 미만이면 입력 내용을 더 구체적으로 서술하여 글자수 충족
+- ${maxChars}자 초과하면 핵심만 남기고 압축
+
+[작성 원칙]
+- 입력된 활동 내용만 사용 (새로운 활동 창작 금지)
+- 단, 입력 내용을 상세하고 풍부하게 표현하는 것은 허용
 
 [입력]
 학번: ${activity.studentId}
@@ -431,7 +459,7 @@ async function callClaude(
 활동내용: ${activity.activityContent}
 
 [출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+교사관찰기록 본문만 출력 (${minChars}~${maxChars}자 범위 준수)`;
 
   const response = await requestUrl({
     url: 'https://api.anthropic.com/v1/messages',
@@ -462,11 +490,19 @@ async function callGemini(
   activity: StudentActivity,
   targetCharCount: number
 ): Promise<string> {
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
+
   const userPrompt = `${SYSTEM_PROMPT}
 
-[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (반드시 ${Math.round(targetCharCount * 0.9)}자 이상 작성)
-- 입력 내용이 짧더라도 학생의 탐구력, 역량, 성장 가능성을 구체적으로 서술하여 목표 글자수 달성
+[글자수 제약 - 반드시 준수]
+- 목표: ${targetCharCount}자 (허용 범위: ${minChars}~${maxChars}자)
+- ${minChars}자 미만이면 입력 내용을 더 구체적으로 서술하여 글자수 충족
+- ${maxChars}자 초과하면 핵심만 남기고 압축
+
+[작성 원칙]
+- 입력된 활동 내용만 사용 (새로운 활동 창작 금지)
+- 단, 입력 내용을 상세하고 풍부하게 표현하는 것은 허용
 
 [입력]
 학번: ${activity.studentId}
@@ -474,7 +510,7 @@ async function callGemini(
 활동내용: ${activity.activityContent}
 
 [출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+교사관찰기록 본문만 출력 (${minChars}~${maxChars}자 범위 준수)`;
 
   const response = await requestUrl({
     url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId || 'gemini-1.5-flash'}:generateContent?key=${apiKey}`,
@@ -508,9 +544,17 @@ async function callGrok(
   activity: StudentActivity,
   targetCharCount: number
 ): Promise<string> {
-  const userPrompt = `[제약 조건]
-- 목표 글자 수: ${targetCharCount}자 (반드시 ${Math.round(targetCharCount * 0.9)}자 이상 작성)
-- 입력 내용이 짧더라도 학생의 탐구력, 역량, 성장 가능성을 구체적으로 서술하여 목표 글자수 달성
+  const minChars = Math.round(targetCharCount * 0.85);
+  const maxChars = Math.round(targetCharCount * 1.15);
+
+  const userPrompt = `[글자수 제약 - 반드시 준수]
+- 목표: ${targetCharCount}자 (허용 범위: ${minChars}~${maxChars}자)
+- ${minChars}자 미만이면 입력 내용을 더 구체적으로 서술하여 글자수 충족
+- ${maxChars}자 초과하면 핵심만 남기고 압축
+
+[작성 원칙]
+- 입력된 활동 내용만 사용 (새로운 활동 창작 금지)
+- 단, 입력 내용을 상세하고 풍부하게 표현하는 것은 허용
 
 [입력]
 학번: ${activity.studentId}
@@ -518,7 +562,7 @@ async function callGrok(
 활동내용: ${activity.activityContent}
 
 [출력]
-교사관찰기록만 출력 (추가 설명 없이)`;
+교사관찰기록 본문만 출력 (${minChars}~${maxChars}자 범위 준수)`;
 
   // Grok API는 OpenAI 호환 형식 사용
   const response = await requestUrl({
@@ -1071,7 +1115,7 @@ class StudentActivitySettingTab extends PluginSettingTab {
       .setDesc('교사관찰기록의 기본 목표 글자 수를 설정합니다.')
       .addText((text) => {
         text
-          .setPlaceholder('500')
+          .setPlaceholder('300')
           .setValue(String(this.plugin.settings.targetCharCount))
           .onChange(async (value) => {
             const num = parseInt(value);
@@ -1194,9 +1238,30 @@ export default class StudentActivityPlugin extends Plugin {
     }).open();
   }
 
-  async processConversion(data: string, targetCharCount: number) {
-    const activities = parseTSV(data);
+  /**
+   * AI API 호출 (제공자별 분기)
+   */
+  private async callAI(activity: StudentActivity, targetCharCount: number): Promise<string> {
+    const { apiKey, apiProvider, modelId } = this.settings;
 
+    switch (apiProvider) {
+      case 'openai':
+        return callOpenAI(apiKey, modelId || DEFAULT_MODELS.openai, activity, targetCharCount);
+      case 'claude':
+        return callClaude(apiKey, modelId || DEFAULT_MODELS.claude, activity, targetCharCount);
+      case 'gemini':
+        return callGemini(apiKey, modelId || DEFAULT_MODELS.gemini, activity, targetCharCount);
+      case 'grok':
+        return callGrok(apiKey, modelId || DEFAULT_MODELS.grok, activity, targetCharCount);
+      default:
+        throw new Error(`지원하지 않는 AI 제공자: ${apiProvider}`);
+    }
+  }
+
+  /**
+   * 공통 변환 처리 로직
+   */
+  private async processActivities(activities: StudentActivity[], targetCharCount: number): Promise<void> {
     if (activities.length === 0) {
       new Notice('변환할 데이터가 없습니다.');
       return;
@@ -1213,50 +1278,12 @@ export default class StudentActivityPlugin extends Plugin {
       progressModal.updateProgress(i + 1, activities.length, activity.studentName);
 
       try {
-        let observation: string;
-
-        switch (this.settings.apiProvider) {
-          case 'openai':
-            observation = await callOpenAI(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.openai,
-              activity,
-              targetCharCount
-            );
-            break;
-          case 'claude':
-            observation = await callClaude(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.claude,
-              activity,
-              targetCharCount
-            );
-            break;
-          case 'gemini':
-            observation = await callGemini(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.gemini,
-              activity,
-              targetCharCount
-            );
-            break;
-          case 'grok':
-            observation = await callGrok(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.grok,
-              activity,
-              targetCharCount
-            );
-            break;
-          default:
-            throw new Error(`지원하지 않는 AI 제공자: ${this.settings.apiProvider}`);
-        }
-
+        const observation = await this.callAI(activity, targetCharCount);
         records.push({
           studentId: activity.studentId,
           studentName: activity.studentName,
           activityContent: activity.activityContent,
-          observation: observation,
+          observation,
           charCount: countChars(observation),
           byteCount: countBytes(observation),
         });
@@ -1275,15 +1302,13 @@ export default class StudentActivityPlugin extends Plugin {
 
       // API 호출 간 딜레이 (rate limit 방지)
       if (i < activities.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
     }
 
-    // 마지막 학생 완료 표시
     progressModal.markLastStudentComplete();
     progressModal.close();
 
-    // 결과 노트 생성
     await this.createResultNote(records);
 
     if (errorCount > 0) {
@@ -1293,107 +1318,12 @@ export default class StudentActivityPlugin extends Plugin {
     }
   }
 
-  /**
-   * 스마트 파싱을 사용하는 변환 처리 (선택 영역 변환용)
-   * - 학번/이름 없는 데이터도 가상 학번/이름으로 처리
-   */
-  async processConversionSmart(data: string, targetCharCount: number) {
-    const activities = parseSmartTSV(data);
+  async processConversion(data: string, targetCharCount: number): Promise<void> {
+    await this.processActivities(parseTSV(data), targetCharCount);
+  }
 
-    if (activities.length === 0) {
-      new Notice('변환할 데이터가 없습니다.');
-      return;
-    }
-
-    const progressModal = new ProgressModal(this.app);
-    progressModal.open();
-
-    const records: ObservationRecord[] = [];
-    let errorCount = 0;
-
-    for (let i = 0; i < activities.length; i++) {
-      const activity = activities[i];
-      progressModal.updateProgress(i + 1, activities.length, activity.studentName);
-
-      try {
-        let observation: string;
-
-        switch (this.settings.apiProvider) {
-          case 'openai':
-            observation = await callOpenAI(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.openai,
-              activity,
-              targetCharCount
-            );
-            break;
-          case 'claude':
-            observation = await callClaude(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.claude,
-              activity,
-              targetCharCount
-            );
-            break;
-          case 'gemini':
-            observation = await callGemini(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.gemini,
-              activity,
-              targetCharCount
-            );
-            break;
-          case 'grok':
-            observation = await callGrok(
-              this.settings.apiKey,
-              this.settings.modelId || DEFAULT_MODELS.grok,
-              activity,
-              targetCharCount
-            );
-            break;
-          default:
-            throw new Error(`지원하지 않는 AI 제공자: ${this.settings.apiProvider}`);
-        }
-
-        records.push({
-          studentId: activity.studentId,
-          studentName: activity.studentName,
-          activityContent: activity.activityContent,
-          observation: observation,
-          charCount: countChars(observation),
-          byteCount: countBytes(observation),
-        });
-      } catch (error) {
-        console.error(`Error processing ${activity.studentName}:`, error);
-        errorCount++;
-        records.push({
-          studentId: activity.studentId,
-          studentName: activity.studentName,
-          activityContent: activity.activityContent,
-          observation: `[변환 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}]`,
-          charCount: 0,
-          byteCount: 0,
-        });
-      }
-
-      // API 호출 간 딜레이 (rate limit 방지)
-      if (i < activities.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-    }
-
-    // 마지막 학생 완료 표시
-    progressModal.markLastStudentComplete();
-    progressModal.close();
-
-    // 결과 노트 생성
-    await this.createResultNote(records);
-
-    if (errorCount > 0) {
-      new Notice(`변환 완료! (${records.length - errorCount}명 성공, ${errorCount}명 실패)`);
-    } else {
-      new Notice(`${records.length}명의 교사관찰기록 변환 완료!`);
-    }
+  async processConversionSmart(data: string, targetCharCount: number): Promise<void> {
+    await this.processActivities(parseSmartTSV(data), targetCharCount);
   }
 
   async createResultNote(records: ObservationRecord[]) {
@@ -1405,7 +1335,6 @@ export default class StudentActivityPlugin extends Plugin {
     let filePath = fileName;
 
     if (this.settings.outputFolder) {
-      // 폴더가 없으면 생성
       const folder = this.app.vault.getAbstractFileByPath(this.settings.outputFolder);
       if (!folder) {
         await this.app.vault.createFolder(this.settings.outputFolder);
@@ -1413,40 +1342,155 @@ export default class StudentActivityPlugin extends Plugin {
       filePath = `${this.settings.outputFolder}/${fileName}`;
     }
 
-    // TSV 데이터를 base64로 인코딩하여 저장 (복사 버튼용)
+    // TSV 데이터를 base64로 인코딩
     const tsvData = generateTSVData(records);
     const encodedTSV = Buffer.from(tsvData).toString('base64');
 
-    const content = `# 교사관찰기록 변환 결과
+    // 통계 계산
+    const successRecords = records.filter(r => r.charCount > 0);
+    const failedRecords = records.filter(r => r.charCount === 0);
+    const avgChars = successRecords.length > 0
+      ? Math.round(successRecords.reduce((sum, r) => sum + r.charCount, 0) / successRecords.length)
+      : 0;
+    const avgBytes = successRecords.length > 0
+      ? Math.round(successRecords.reduce((sum, r) => sum + r.byteCount, 0) / successRecords.length)
+      : 0;
+    const minChars = successRecords.length > 0 ? Math.min(...successRecords.map(r => r.charCount)) : 0;
+    const maxChars = successRecords.length > 0 ? Math.max(...successRecords.map(r => r.charCount)) : 0;
 
-생성일시: ${now.toLocaleString('ko-KR')}
-총 인원: ${records.length}명
-
-## 📋 구글 스프레드시트로 복사
-
-<div class="student-activity-copy-section">
-<button class="student-activity-copy-btn" data-tsv="${encodedTSV}">
-📋 클릭하여 복사하기
-</button>
-<span class="copy-status"></span>
+    // 개별 학생 카드 생성
+    const studentCards = records.map((r, idx) => {
+      const statusIcon = r.charCount > 0 ? '✅' : '❌';
+      const statusClass = r.charCount > 0 ? 'success' : 'failed';
+      return `
+<div class="sa-student-card ${statusClass}" data-student-index="${idx}">
+<div class="sa-card-header">
+<input type="checkbox" class="sa-card-checkbox" data-checkbox-index="${idx}" />
+<span class="sa-card-number">${idx + 1}</span>
+<span class="sa-card-id">${r.studentId}</span>
+<span class="sa-card-name">${r.studentName}</span>
+<span class="sa-card-status">${statusIcon}</span>
+<button class="sa-card-print-btn" data-print-index="${idx}">🖨️ 출력</button>
 </div>
+<div class="sa-card-section">
+<div class="sa-card-label">📝 학생활동기록</div>
+<div class="sa-card-content activity">${r.activityContent}</div>
+</div>
+<div class="sa-card-section">
+<div class="sa-card-label">📋 교사관찰기록</div>
+<div class="sa-card-content observation">${r.observation}</div>
+</div>
+<div class="sa-card-footer">
+<span class="sa-card-stat">📊 ${r.charCount}자</span>
+<span class="sa-card-stat">💾 ${r.byteCount}바이트</span>
+</div>
+</div>`;
+    }).join('\n');
 
-> 위 버튼을 클릭하면 TSV 데이터가 클립보드에 복사됩니다.
-> 구글 스프레드시트에서 Ctrl+V로 붙여넣으면 열이 자동으로 구분됩니다.
+    const content = `---
+title: 교사관찰기록 변환 결과
+created: ${dateStr}
+type: 교사관찰기록
+students: ${records.length}
+ai_provider: ${this.settings.apiProvider}
+model: ${this.settings.modelId}
+---
+
+<div class="sa-result-container">
+
+# ✨ 교사관찰기록 변환 결과
+
+<div class="sa-meta-section">
+<div class="sa-meta-item">
+<span class="sa-meta-icon">📅</span>
+<span class="sa-meta-label">생성일시</span>
+<span class="sa-meta-value">${now.toLocaleString('ko-KR')}</span>
+</div>
+<div class="sa-meta-item">
+<span class="sa-meta-icon">🤖</span>
+<span class="sa-meta-label">AI 모델</span>
+<span class="sa-meta-value">${this.settings.apiProvider.toUpperCase()} / ${this.settings.modelId}</span>
+</div>
+<div class="sa-meta-item">
+<span class="sa-meta-icon">🎯</span>
+<span class="sa-meta-label">목표 글자수</span>
+<span class="sa-meta-value">${this.settings.targetCharCount}자</span>
+</div>
+</div>
 
 ---
 
-## 결과 테이블
+## 📊 변환 통계
+
+<div class="sa-stats-grid">
+<div class="sa-stat-card primary">
+<div class="sa-stat-icon">👥</div>
+<div class="sa-stat-value">${records.length}명</div>
+<div class="sa-stat-label">총 인원</div>
+</div>
+<div class="sa-stat-card success">
+<div class="sa-stat-icon">✅</div>
+<div class="sa-stat-value">${successRecords.length}명</div>
+<div class="sa-stat-label">변환 성공</div>
+</div>
+${failedRecords.length > 0 ? `<div class="sa-stat-card error">
+<div class="sa-stat-icon">❌</div>
+<div class="sa-stat-value">${failedRecords.length}명</div>
+<div class="sa-stat-label">변환 실패</div>
+</div>` : ''}
+<div class="sa-stat-card info">
+<div class="sa-stat-icon">📝</div>
+<div class="sa-stat-value">${avgChars}자</div>
+<div class="sa-stat-label">평균 글자수</div>
+</div>
+<div class="sa-stat-card info">
+<div class="sa-stat-icon">💾</div>
+<div class="sa-stat-value">${avgBytes}</div>
+<div class="sa-stat-label">평균 바이트</div>
+</div>
+<div class="sa-stat-card">
+<div class="sa-stat-icon">📉</div>
+<div class="sa-stat-value">${minChars}~${maxChars}</div>
+<div class="sa-stat-label">글자수 범위</div>
+</div>
+</div>
+
+---
+
+## 📋 구글 스프레드시트로 복사
+
+<div class="sa-copy-section">
+<button class="student-activity-copy-btn" data-tsv="${encodedTSV}">
+📋 클릭하여 클립보드에 복사
+</button>
+<p class="sa-copy-hint">복사 후 구글 스프레드시트에서 <kbd>Ctrl</kbd>+<kbd>V</kbd>로 붙여넣기</p>
+</div>
+
+---
+
+## 🖨️ 출력하기
+
+<div class="sa-print-section">
+<button class="sa-select-btn" data-select-all="true">☑️ 전체 선택</button>
+<button class="sa-select-btn" data-select-all="false">☐ 전체 해제</button>
+<button class="sa-print-btn print-selected" data-print-selected="true">🖨️ 선택 출력</button>
+<button class="sa-print-btn print-all" data-print-all="true">🖨️ 전체 출력</button>
+</div>
+<p class="sa-print-hint">💡 학생 카드의 체크박스를 선택한 후 '선택 출력'을 클릭하세요</p>
+
+---
+
+## 📑 변환 결과 상세
+
+${studentCards}
+
+---
+
+## 📋 결과 테이블
 
 ${generateMarkdownTable(records)}
 
-## 통계
-
-| 항목 | 값 |
-|------|-----|
-| 총 인원 | ${records.length}명 |
-| 평균 글자 수 | ${Math.round(records.reduce((sum, r) => sum + r.charCount, 0) / records.length)}자 |
-| 평균 바이트 수 | ${Math.round(records.reduce((sum, r) => sum + r.byteCount, 0) / records.length)} 바이트 |
+</div>
 `;
 
     const file = await this.app.vault.create(filePath, content);
@@ -1462,6 +1506,7 @@ ${generateMarkdownTable(records)}
   registerCopyButtonHandler() {
     // DOM이 준비될 때까지 약간의 딜레이
     setTimeout(() => {
+      // 복사 버튼 핸들러
       const copyButtons = document.querySelectorAll('.student-activity-copy-btn');
       copyButtons.forEach((btn) => {
         if (btn.hasAttribute('data-listener-attached')) return;
@@ -1492,6 +1537,194 @@ ${generateMarkdownTable(records)}
           }
         });
       });
+
+      // 개별 출력 버튼 핸들러
+      const printButtons = document.querySelectorAll('.sa-card-print-btn');
+      printButtons.forEach((btn) => {
+        if (btn.hasAttribute('data-listener-attached')) return;
+        btn.setAttribute('data-listener-attached', 'true');
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const button = e.currentTarget as HTMLElement;
+          const printIndex = button.getAttribute('data-print-index');
+          if (printIndex === null) return;
+
+          this.printIndividualStudent(parseInt(printIndex));
+        });
+      });
+
+      // 전체 출력 버튼 핸들러
+      const printAllButtons = document.querySelectorAll('.sa-print-btn.print-all');
+      printAllButtons.forEach((btn) => {
+        if (btn.hasAttribute('data-listener-attached')) return;
+        btn.setAttribute('data-listener-attached', 'true');
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.printAllStudents();
+        });
+      });
+
+      // 선택 출력 버튼 핸들러
+      const printSelectedButtons = document.querySelectorAll('.sa-print-btn.print-selected');
+      printSelectedButtons.forEach((btn) => {
+        if (btn.hasAttribute('data-listener-attached')) return;
+        btn.setAttribute('data-listener-attached', 'true');
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.printSelectedStudents();
+        });
+      });
+
+      // 전체 선택/해제 버튼 핸들러
+      const selectButtons = document.querySelectorAll('.sa-select-btn');
+      selectButtons.forEach((btn) => {
+        if (btn.hasAttribute('data-listener-attached')) return;
+        btn.setAttribute('data-listener-attached', 'true');
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const button = e.currentTarget as HTMLElement;
+          const selectAll = button.getAttribute('data-select-all') === 'true';
+          this.toggleAllCheckboxes(selectAll);
+        });
+      });
     }, 500);
+  }
+
+  /**
+   * 개별 학생 출력
+   */
+  printIndividualStudent(studentIndex: number) {
+    const container = document.querySelector('.sa-result-container');
+    if (!container) {
+      new Notice('출력할 내용을 찾을 수 없습니다.');
+      return;
+    }
+
+    // 모든 카드에서 print-target 클래스 제거
+    const allCards = container.querySelectorAll('.sa-student-card');
+    allCards.forEach(card => card.classList.remove('print-target'));
+
+    // 선택한 카드에 print-target 클래스 추가
+    const targetCard = container.querySelector(`.sa-student-card[data-student-index="${studentIndex}"]`);
+    if (targetCard) {
+      targetCard.classList.add('print-target');
+    }
+
+    // 컨테이너에 print-individual 클래스 추가
+    container.classList.remove('print-all');
+    container.classList.add('print-individual');
+
+    // 학생 이름 가져오기
+    const studentName = targetCard?.querySelector('.sa-card-name')?.textContent || '학생';
+    new Notice(`🖨️ ${studentName} 교사관찰기록 출력 중...`);
+
+    // 약간의 딜레이 후 출력
+    setTimeout(() => {
+      window.print();
+
+      // 출력 후 클래스 정리
+      setTimeout(() => {
+        container.classList.remove('print-individual');
+        allCards.forEach(card => card.classList.remove('print-target'));
+      }, 1000);
+    }, 100);
+  }
+
+  /**
+   * 전체 학생 출력 (교사용)
+   */
+  printAllStudents() {
+    const container = document.querySelector('.sa-result-container');
+    if (!container) {
+      new Notice('출력할 내용을 찾을 수 없습니다.');
+      return;
+    }
+
+    // 컨테이너에 print-all 클래스 추가
+    container.classList.remove('print-individual', 'print-selected');
+    container.classList.add('print-all');
+
+    new Notice('🖨️ 전체 교사관찰기록 출력 중...');
+
+    // 약간의 딜레이 후 출력
+    setTimeout(() => {
+      window.print();
+
+      // 출력 후 클래스 정리
+      setTimeout(() => {
+        container.classList.remove('print-all');
+      }, 1000);
+    }, 100);
+  }
+
+  /**
+   * 체크박스 전체 선택/해제
+   */
+  toggleAllCheckboxes(selectAll: boolean) {
+    const checkboxes = document.querySelectorAll('.sa-card-checkbox') as NodeListOf<HTMLInputElement>;
+    checkboxes.forEach((checkbox) => {
+      checkbox.checked = selectAll;
+    });
+
+    const count = selectAll ? checkboxes.length : 0;
+    new Notice(selectAll ? `☑️ ${count}명 전체 선택됨` : '☐ 전체 선택 해제됨');
+  }
+
+  /**
+   * 선택된 학생들 출력
+   */
+  printSelectedStudents() {
+    const container = document.querySelector('.sa-result-container');
+    if (!container) {
+      new Notice('출력할 내용을 찾을 수 없습니다.');
+      return;
+    }
+
+    // 선택된 체크박스 찾기
+    const checkboxes = document.querySelectorAll('.sa-card-checkbox:checked') as NodeListOf<HTMLInputElement>;
+    if (checkboxes.length === 0) {
+      new Notice('⚠️ 출력할 학생을 선택해주세요.');
+      return;
+    }
+
+    // 모든 카드에서 print-target 클래스 제거
+    const allCards = container.querySelectorAll('.sa-student-card');
+    allCards.forEach(card => card.classList.remove('print-target'));
+
+    // 선택된 카드에 print-target 클래스 추가
+    const selectedNames: string[] = [];
+    checkboxes.forEach((checkbox) => {
+      const index = checkbox.getAttribute('data-checkbox-index');
+      if (index !== null) {
+        const card = container.querySelector(`.sa-student-card[data-student-index="${index}"]`);
+        if (card) {
+          card.classList.add('print-target');
+          const name = card.querySelector('.sa-card-name')?.textContent;
+          if (name) selectedNames.push(name);
+        }
+      }
+    });
+
+    // 컨테이너에 print-selected 클래스 추가
+    container.classList.remove('print-all', 'print-individual');
+    container.classList.add('print-selected');
+
+    new Notice(`🖨️ ${checkboxes.length}명 선택 출력 중...`);
+
+    // 약간의 딜레이 후 출력
+    setTimeout(() => {
+      window.print();
+
+      // 출력 후 클래스 정리
+      setTimeout(() => {
+        container.classList.remove('print-selected');
+        allCards.forEach(card => card.classList.remove('print-target'));
+      }, 1000);
+    }, 100);
   }
 }
