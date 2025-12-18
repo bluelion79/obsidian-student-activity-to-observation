@@ -1235,3 +1235,546 @@
     margin: 12pt 0 8pt 0 !important;
   }
 }
+
+/* ==================== Edit Modal Styles ==================== */
+.sa-edit-modal {
+  padding: 24px;
+  max-width: 700px;
+  border-radius: var(--sa-radius-xl);
+}
+
+.sa-edit-header h2 {
+  margin: 0 0 20px 0;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--sa-gradient-start), var(--sa-gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  border: none;
+  padding: 0;
+}
+
+.sa-edit-student-info {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-secondary-alt) 100%);
+  border-radius: var(--sa-radius-md);
+  margin-bottom: 20px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.sa-edit-student-id,
+.sa-edit-student-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.sa-edit-section {
+  margin-bottom: 20px;
+}
+
+.sa-edit-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sa-edit-activity-box {
+  padding: 14px;
+  background: var(--background-secondary);
+  border-radius: var(--sa-radius-md);
+  border-left: 3px solid var(--text-faint);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  font-style: italic;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.sa-edit-textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 14px;
+  border: 2px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-md);
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 14px;
+  line-height: 1.7;
+  resize: vertical;
+  transition: all var(--sa-transition-normal);
+  font-family: inherit;
+}
+
+.sa-edit-textarea:focus {
+  border-color: var(--sa-primary);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(91, 110, 247, 0.15);
+}
+
+.sa-edit-textarea:hover:not(:focus) {
+  border-color: var(--text-faint);
+}
+
+/* Count Section */
+.sa-edit-count-section,
+.sa-edit-counts {
+  display: flex;
+  gap: 20px;
+  padding: 14px;
+  background: var(--background-secondary);
+  border-radius: var(--sa-radius-md);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.sa-edit-count-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sa-edit-count-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sa-edit-count-value {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--sa-radius-sm);
+  transition: all var(--sa-transition-fast);
+}
+
+.sa-edit-count-value.under {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--sa-warning);
+}
+
+.sa-edit-count-value.good {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--sa-success);
+}
+
+.sa-edit-count-value.over {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--sa-error);
+}
+
+/* Target and Current Counts (for existing modal) */
+.sa-edit-target {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  background: rgba(91, 110, 247, 0.08);
+  border-radius: var(--sa-radius-sm);
+  flex: 1;
+}
+
+.sa-edit-target strong {
+  color: var(--sa-primary);
+}
+
+.sa-edit-current-counts {
+  display: flex;
+  gap: 16px;
+}
+
+.sa-edit-char-count,
+.sa-edit-byte-count {
+  font-size: 14px;
+  padding: 6px 12px;
+  background: var(--background-primary);
+  border-radius: var(--sa-radius-sm);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.sa-edit-char-count .under {
+  color: var(--sa-warning);
+  font-weight: 600;
+}
+
+.sa-edit-char-count .good {
+  color: var(--sa-success);
+  font-weight: 600;
+}
+
+.sa-edit-char-count .over {
+  color: var(--sa-error);
+  font-weight: 600;
+}
+
+/* Spell Check Section */
+.sa-edit-spell-section {
+  margin-bottom: 20px;
+}
+
+.sa-edit-spell-btn,
+.sa-spell-check-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  border: none;
+  border-radius: var(--sa-radius-md);
+  cursor: pointer;
+  transition: all var(--sa-transition-normal);
+  box-shadow: var(--sa-shadow-sm);
+}
+
+.sa-edit-spell-btn:hover,
+.sa-spell-check-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sa-shadow-md), 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+.sa-edit-spell-result,
+.sa-spell-results {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: var(--sa-radius-md);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Spell Check Results for Existing Modal */
+.sa-spell-success {
+  padding: 14px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: var(--sa-radius-md);
+  color: var(--sa-success);
+  font-weight: 600;
+  text-align: center;
+}
+
+.sa-spell-result-header {
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--sa-radius-md);
+  color: var(--sa-error);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.sa-spell-item {
+  padding: 12px;
+  background: var(--background-primary);
+  border-radius: var(--sa-radius-sm);
+  margin-bottom: 8px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.sa-spell-item:last-child {
+  margin-bottom: 0;
+}
+
+.sa-spell-error {
+  margin-bottom: 8px;
+}
+
+.sa-spell-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sa-spell-token {
+  padding: 2px 8px;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--sa-error);
+  border-radius: 4px;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.sa-spell-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sa-spell-suggestion-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  background: var(--sa-success);
+  border: none;
+  border-radius: var(--sa-radius-sm);
+  cursor: pointer;
+  transition: all var(--sa-transition-fast);
+}
+
+.sa-spell-suggestion-btn:hover {
+  background: #16A34A;
+  transform: scale(1.05);
+}
+
+.sa-spell-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  background: var(--background-secondary);
+  border-radius: var(--sa-radius-sm);
+}
+
+.sa-spell-error-msg {
+  padding: 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--sa-radius-md);
+  color: var(--sa-error);
+  font-weight: 500;
+  text-align: center;
+}
+
+.sa-edit-spell-loading {
+  text-align: center;
+  padding: 16px;
+  color: var(--sa-primary);
+  font-weight: 500;
+}
+
+.sa-edit-spell-success {
+  padding: 14px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: var(--sa-radius-md);
+  color: var(--sa-success);
+  font-weight: 600;
+  text-align: center;
+}
+
+.sa-edit-spell-error {
+  padding: 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--sa-radius-md);
+  color: var(--sa-error);
+  font-weight: 500;
+  text-align: center;
+}
+
+.sa-edit-spell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.sa-edit-spell-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.sa-edit-spell-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-md);
+}
+
+.sa-edit-spell-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.sa-edit-spell-item:last-child {
+  border-bottom: none;
+}
+
+.sa-edit-spell-item:hover {
+  background: var(--background-secondary);
+}
+
+.sa-edit-spell-error-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sa-edit-spell-original {
+  padding: 3px 8px;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--sa-error);
+  border-radius: 4px;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.sa-edit-spell-arrow {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.sa-edit-spell-corrected {
+  padding: 3px 8px;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--sa-success);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.sa-edit-spell-apply-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  background: var(--sa-primary);
+  border: none;
+  border-radius: var(--sa-radius-sm);
+  cursor: pointer;
+  transition: all var(--sa-transition-fast);
+}
+
+.sa-edit-spell-apply-btn:hover {
+  background: var(--sa-primary-hover);
+  transform: scale(1.05);
+}
+
+.sa-edit-spell-help {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  background: var(--background-secondary);
+  border-radius: var(--sa-radius-sm);
+}
+
+.sa-edit-spell-apply-all-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, var(--sa-gradient-start), var(--sa-gradient-end));
+  border: none;
+  border-radius: var(--sa-radius-md);
+  cursor: pointer;
+  transition: all var(--sa-transition-normal);
+}
+
+.sa-edit-spell-apply-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sa-shadow-md);
+}
+
+/* Button Section */
+.sa-edit-button-section,
+.sa-edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.sa-edit-cancel-btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-normal);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-md);
+  cursor: pointer;
+  transition: all var(--sa-transition-fast);
+}
+
+.sa-edit-cancel-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--text-faint);
+}
+
+.sa-edit-save-btn {
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, var(--sa-success), #16A34A);
+  border: none;
+  border-radius: var(--sa-radius-md);
+  cursor: pointer;
+  transition: all var(--sa-transition-normal);
+  box-shadow: var(--sa-shadow-sm);
+}
+
+.sa-edit-save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sa-shadow-md), 0 0 15px rgba(34, 197, 94, 0.3);
+}
+
+/* Edit Button on Student Card */
+.sa-card-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--sa-radius-sm);
+  cursor: pointer;
+  transition: all var(--sa-transition-fast);
+  margin-left: auto;
+}
+
+.sa-card-edit-btn:hover {
+  color: white;
+  background: linear-gradient(135deg, var(--sa-gradient-start), var(--sa-gradient-end));
+  border-color: transparent;
+}
+
+/* Dark Mode Adjustments for Edit Modal */
+.theme-dark .sa-edit-textarea:focus {
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2);
+}
+
+.theme-dark .sa-edit-spell-btn:hover {
+  box-shadow: var(--sa-shadow-md), 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+/* Scrollbar for Edit Modal */
+.sa-edit-activity-box::-webkit-scrollbar,
+.sa-edit-spell-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sa-edit-activity-box::-webkit-scrollbar-track,
+.sa-edit-spell-list::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: 3px;
+}
+
+.sa-edit-activity-box::-webkit-scrollbar-thumb,
+.sa-edit-spell-list::-webkit-scrollbar-thumb {
+  background: var(--text-faint);
+  border-radius: 3px;
+}
+
+.sa-edit-activity-box::-webkit-scrollbar-thumb:hover,
+.sa-edit-spell-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

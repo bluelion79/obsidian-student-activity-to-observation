@@ -1014,6 +1014,277 @@ class ProgressModal extends Modal {
   }
 }
 
+// ==================== Edit Observation Modal ====================
+
+interface SpellCheckResult {
+  token: string;
+  suggestions: string[];
+  info: string;
+}
+
+async function checkSpellByDaum(text: string): Promise<SpellCheckResult[]> {
+  try {
+    const response = await requestUrl({
+      url: 'https://dic.daum.net/grammar_checker.do',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `sentence=${encodeURIComponent(text)}`,
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`맞춤법 검사 API 오류: ${response.status}`);
+    }
+
+    const data = response.json;
+    const results: SpellCheckResult[] = [];
+
+    if (data.errs && Array.isArray(data.errs)) {
+      for (const err of data.errs) {
+        results.push({
+          token: err.orgStr || '',
+          suggestions: err.candWord ? err.candWord.split('|') : [],
+          info: err.help || '',
+        });
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error('Spell check error:', error);
+    throw error;
+  }
+}
+
+class EditObservationModal extends Modal {
+  plugin: StudentActivityPlugin;
+  studentIndex: number;
+  studentId: string;
+  studentName: string;
+  activityContent: string;
+  observation: string;
+  onSave: (newObservation: string, charCount: number, byteCount: number) => void;
+
+  textArea: HTMLTextAreaElement | null = null;
+  charCountEl: HTMLElement | null = null;
+  byteCountEl: HTMLElement | null = null;
+  spellResultsEl: HTMLElement | null = null;
+  targetCharCount: number;
+
+  constructor(
+    app: App,
+    plugin: StudentActivityPlugin,
+    studentIndex: number,
+    studentId: string,
+    studentName: string,
+    activityContent: string,
+    observation: string,
+    onSave: (newObservation: string, charCount: number, byteCount: number) => void
+  ) {
+    super(app);
+    this.plugin = plugin;
+    this.studentIndex = studentIndex;
+    this.studentId = studentId;
+    this.studentName = studentName;
+    this.activityContent = activityContent;
+    this.observation = observation;
+    this.onSave = onSave;
+    this.targetCharCount = plugin.settings.targetCharCount;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('sa-edit-modal');
+
+    // 헤더
+    const headerDiv = contentEl.createDiv({ cls: 'sa-edit-header' });
+    headerDiv.createEl('h2', { text: '✏️ 교사관찰기록 수정' });
+
+    const studentInfo = headerDiv.createDiv({ cls: 'sa-edit-student-info' });
+    studentInfo.createSpan({ text: `${this.studentId}`, cls: 'sa-edit-student-id' });
+    studentInfo.createSpan({ text: this.studentName, cls: 'sa-edit-student-name' });
+
+    // 학생활동기록 (읽기 전용)
+    const activitySection = contentEl.createDiv({ cls: 'sa-edit-section' });
+    activitySection.createEl('h4', { text: '📝 학생활동기록 (참고용)' });
+    const activityBox = activitySection.createDiv({ cls: 'sa-edit-activity-box' });
+    activityBox.setText(this.activityContent);
+
+    // 교사관찰기록 수정 영역
+    const editSection = contentEl.createDiv({ cls: 'sa-edit-section' });
+    editSection.createEl('h4', { text: '📋 교사관찰기록 수정' });
+
+    // 텍스트 영역
+    this.textArea = editSection.createEl('textarea', {
+      cls: 'sa-edit-textarea',
+      attr: { rows: '8' },
+    });
+    this.textArea.value = this.observation;
+    this.textArea.addEventListener('input', () => this.updateCounts());
+
+    // 글자수/바이트수 실시간 표시
+    const countsDiv = editSection.createDiv({ cls: 'sa-edit-counts' });
+
+    const targetMin = Math.round(this.targetCharCount * 0.85);
+    const targetMax = Math.round(this.targetCharCount * 1.15);
+
+    const targetInfo = countsDiv.createDiv({ cls: 'sa-edit-target' });
+    targetInfo.innerHTML = `🎯 목표: <strong>${this.targetCharCount}자</strong> (${targetMin}~${targetMax}자)`;
+
+    const currentCounts = countsDiv.createDiv({ cls: 'sa-edit-current-counts' });
+    this.charCountEl = currentCounts.createSpan({ cls: 'sa-edit-char-count' });
+    this.byteCountEl = currentCounts.createSpan({ cls: 'sa-edit-byte-count' });
+
+    this.updateCounts();
+
+    // 맞춤법 검사 섹션
+    const spellSection = contentEl.createDiv({ cls: 'sa-edit-section' });
+    const spellHeader = spellSection.createDiv({ cls: 'sa-edit-spell-header' });
+    spellHeader.createEl('h4', { text: '📖 맞춤법 검사' });
+
+    const spellCheckBtn = spellHeader.createEl('button', {
+      text: '🔍 검사하기',
+      cls: 'sa-spell-check-btn',
+    });
+    spellCheckBtn.addEventListener('click', () => this.runSpellCheck());
+
+    this.spellResultsEl = spellSection.createDiv({ cls: 'sa-spell-results' });
+    this.spellResultsEl.setText('맞춤법 검사 버튼을 클릭하세요.');
+
+    // 버튼 컨테이너
+    const buttonContainer = contentEl.createDiv({ cls: 'sa-edit-buttons' });
+
+    const cancelBtn = buttonContainer.createEl('button', {
+      text: '취소',
+      cls: 'sa-edit-cancel-btn',
+    });
+    cancelBtn.addEventListener('click', () => this.close());
+
+    const saveBtn = buttonContainer.createEl('button', {
+      text: '💾 저장',
+      cls: 'sa-edit-save-btn',
+    });
+    saveBtn.addEventListener('click', () => this.saveChanges());
+  }
+
+  updateCounts() {
+    if (!this.textArea || !this.charCountEl || !this.byteCountEl) return;
+
+    const text = this.textArea.value;
+    const chars = countChars(text);
+    const bytes = countBytes(text);
+
+    const targetMin = Math.round(this.targetCharCount * 0.85);
+    const targetMax = Math.round(this.targetCharCount * 1.15);
+
+    // 글자수 상태에 따른 색상
+    let charClass = 'normal';
+    if (chars < targetMin) {
+      charClass = 'under';
+    } else if (chars > targetMax) {
+      charClass = 'over';
+    } else {
+      charClass = 'good';
+    }
+
+    this.charCountEl.innerHTML = `📊 <span class="${charClass}">${chars}자</span>`;
+    this.byteCountEl.innerHTML = `💾 ${bytes}바이트`;
+  }
+
+  async runSpellCheck() {
+    if (!this.textArea || !this.spellResultsEl) return;
+
+    const text = this.textArea.value;
+    if (!text.trim()) {
+      this.spellResultsEl.setText('검사할 내용이 없습니다.');
+      return;
+    }
+
+    this.spellResultsEl.setText('⏳ 맞춤법 검사 중...');
+
+    try {
+      const results = await checkSpellByDaum(text);
+
+      this.spellResultsEl.empty();
+
+      if (results.length === 0) {
+        const successMsg = this.spellResultsEl.createDiv({ cls: 'sa-spell-success' });
+        successMsg.setText('✅ 맞춤법 오류가 없습니다!');
+        return;
+      }
+
+      const resultHeader = this.spellResultsEl.createDiv({ cls: 'sa-spell-result-header' });
+      resultHeader.setText(`🔴 ${results.length}개의 오류가 발견되었습니다.`);
+
+      for (const result of results) {
+        const itemDiv = this.spellResultsEl.createDiv({ cls: 'sa-spell-item' });
+
+        const errorDiv = itemDiv.createDiv({ cls: 'sa-spell-error' });
+        errorDiv.createSpan({ text: '오류: ', cls: 'sa-spell-label' });
+        errorDiv.createSpan({ text: result.token, cls: 'sa-spell-token' });
+
+        if (result.suggestions.length > 0) {
+          const suggestDiv = itemDiv.createDiv({ cls: 'sa-spell-suggest' });
+          suggestDiv.createSpan({ text: '제안: ', cls: 'sa-spell-label' });
+
+          for (const suggestion of result.suggestions) {
+            const suggestionBtn = suggestDiv.createEl('button', {
+              text: suggestion,
+              cls: 'sa-spell-suggestion-btn',
+            });
+            suggestionBtn.addEventListener('click', () => {
+              this.applySuggestion(result.token, suggestion);
+            });
+          }
+        }
+
+        if (result.info) {
+          const infoDiv = itemDiv.createDiv({ cls: 'sa-spell-info' });
+          infoDiv.setText(result.info);
+        }
+      }
+    } catch (error) {
+      this.spellResultsEl.empty();
+      const errorMsg = this.spellResultsEl.createDiv({ cls: 'sa-spell-error-msg' });
+      errorMsg.setText('❌ 맞춤법 검사 중 오류가 발생했습니다.');
+      new Notice('맞춤법 검사 실패: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+    }
+  }
+
+  applySuggestion(originalToken: string, suggestion: string) {
+    if (!this.textArea) return;
+
+    const currentText = this.textArea.value;
+    const newText = currentText.replace(originalToken, suggestion);
+    this.textArea.value = newText;
+    this.updateCounts();
+
+    new Notice(`✅ "${originalToken}" → "${suggestion}" 교정됨`);
+
+    // 다시 맞춤법 검사 실행
+    this.runSpellCheck();
+  }
+
+  saveChanges() {
+    if (!this.textArea) return;
+
+    const newObservation = this.textArea.value;
+    const charCount = countChars(newObservation);
+    const byteCount = countBytes(newObservation);
+
+    this.onSave(newObservation, charCount, byteCount);
+    this.close();
+    new Notice(`✅ ${this.studentName} 교사관찰기록이 저장되었습니다.`);
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
 // ==================== Settings Tab ====================
 
 class StudentActivitySettingTab extends PluginSettingTab {
@@ -1383,6 +1654,7 @@ export default class StudentActivityPlugin extends Plugin {
 <div class="sa-card-footer">
 <span class="sa-card-stat">📊 ${r.charCount}자</span>
 <span class="sa-card-stat">💾 ${r.byteCount}바이트</span>
+<button class="sa-card-edit-btn" data-edit-index="${idx}" data-student-id="${r.studentId}" data-student-name="${r.studentName}">✏️ 수정</button>
 </div>
 </div>`;
     }).join('\n');
@@ -1592,6 +1864,26 @@ ${generateMarkdownTable(records)}
           this.toggleAllCheckboxes(selectAll);
         });
       });
+
+      // 수정 버튼 핸들러
+      const editButtons = document.querySelectorAll('.sa-card-edit-btn');
+      editButtons.forEach((btn) => {
+        if (btn.hasAttribute('data-listener-attached')) return;
+        btn.setAttribute('data-listener-attached', 'true');
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const button = e.currentTarget as HTMLElement;
+          const editIndex = button.getAttribute('data-edit-index');
+          const studentId = button.getAttribute('data-student-id') || '';
+          const studentName = button.getAttribute('data-student-name') || '';
+
+          if (editIndex !== null) {
+            this.openEditModal(parseInt(editIndex), studentId, studentName);
+          }
+        });
+      });
     }, 500);
   }
 
@@ -1726,5 +2018,102 @@ ${generateMarkdownTable(records)}
         allCards.forEach(card => card.classList.remove('print-target'));
       }, 1000);
     }, 100);
+  }
+
+  /**
+   * 수정 모달 열기
+   */
+  openEditModal(studentIndex: number, studentId: string, studentName: string) {
+    // 현재 열린 파일에서 학생 데이터 가져오기
+    const container = document.querySelector('.sa-result-container');
+    if (!container) {
+      new Notice('수정할 내용을 찾을 수 없습니다.');
+      return;
+    }
+
+    const card = container.querySelector(`.sa-student-card[data-student-index="${studentIndex}"]`);
+    if (!card) {
+      new Notice('학생 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    const activityContent = card.querySelector('.sa-card-content.activity')?.textContent || '';
+    const observationContent = card.querySelector('.sa-card-content.observation')?.textContent || '';
+
+    new EditObservationModal(
+      this.app,
+      this,
+      studentIndex,
+      studentId,
+      studentName,
+      activityContent,
+      observationContent,
+      async (newObservation: string, charCount: number, byteCount: number) => {
+        await this.updateObservationInNote(studentIndex, newObservation, charCount, byteCount);
+      }
+    ).open();
+  }
+
+  /**
+   * 교사관찰기록 수정 후 노트 업데이트
+   */
+  async updateObservationInNote(studentIndex: number, newObservation: string, charCount: number, byteCount: number) {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile) {
+      new Notice('활성 파일을 찾을 수 없습니다.');
+      return;
+    }
+
+    try {
+      let content = await this.app.vault.read(activeFile);
+
+      // 해당 학생 카드의 교사관찰기록 부분을 찾아서 교체
+      // data-student-index를 기준으로 해당 카드 찾기
+      const cardPattern = new RegExp(
+        `(<div class="sa-student-card[^"]*" data-student-index="${studentIndex}">` +
+        `[\\s\\S]*?<div class="sa-card-content observation">)([\\s\\S]*?)(</div>\\s*</div>\\s*<div class="sa-card-footer">)`,
+        'g'
+      );
+
+      const newContent = content.replace(cardPattern, `$1${newObservation}$3`);
+
+      if (newContent !== content) {
+        // footer의 통계도 업데이트
+        const footerPattern = new RegExp(
+          `(<div class="sa-student-card[^"]*" data-student-index="${studentIndex}">[\\s\\S]*?` +
+          `<div class="sa-card-footer">[\\s\\S]*?<span class="sa-card-stat">📊 )\\d+(자</span>\\s*` +
+          `<span class="sa-card-stat">💾 )\\d+(바이트</span>)`,
+          'g'
+        );
+
+        const finalContent = newContent.replace(
+          footerPattern,
+          `$1${charCount}$2${byteCount}$3`
+        );
+
+        await this.app.vault.modify(activeFile, finalContent);
+
+        // DOM도 업데이트
+        const container = document.querySelector('.sa-result-container');
+        if (container) {
+          const card = container.querySelector(`.sa-student-card[data-student-index="${studentIndex}"]`);
+          if (card) {
+            const obsEl = card.querySelector('.sa-card-content.observation');
+            if (obsEl) obsEl.textContent = newObservation;
+
+            const stats = card.querySelectorAll('.sa-card-stat');
+            if (stats.length >= 2) {
+              stats[0].textContent = `📊 ${charCount}자`;
+              stats[1].textContent = `💾 ${byteCount}바이트`;
+            }
+          }
+        }
+      } else {
+        new Notice('⚠️ 수정할 위치를 찾을 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('Error updating note:', error);
+      new Notice('❌ 노트 수정 중 오류가 발생했습니다.');
+    }
   }
 }

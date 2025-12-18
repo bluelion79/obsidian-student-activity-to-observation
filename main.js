@@ -813,6 +813,197 @@ var ProgressModal = class extends import_obsidian.Modal {
     contentEl.empty();
   }
 };
+async function checkSpellByDaum(text) {
+  try {
+    const response = await (0, import_obsidian.requestUrl)({
+      url: "https://dic.daum.net/grammar_checker.do",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: `sentence=${encodeURIComponent(text)}`
+    });
+    if (response.status !== 200) {
+      throw new Error(`\uB9DE\uCDA4\uBC95 \uAC80\uC0AC API \uC624\uB958: ${response.status}`);
+    }
+    const data = response.json;
+    const results = [];
+    if (data.errs && Array.isArray(data.errs)) {
+      for (const err of data.errs) {
+        results.push({
+          token: err.orgStr || "",
+          suggestions: err.candWord ? err.candWord.split("|") : [],
+          info: err.help || ""
+        });
+      }
+    }
+    return results;
+  } catch (error) {
+    console.error("Spell check error:", error);
+    throw error;
+  }
+}
+var EditObservationModal = class extends import_obsidian.Modal {
+  constructor(app, plugin, studentIndex, studentId, studentName, activityContent, observation, onSave) {
+    super(app);
+    this.textArea = null;
+    this.charCountEl = null;
+    this.byteCountEl = null;
+    this.spellResultsEl = null;
+    this.plugin = plugin;
+    this.studentIndex = studentIndex;
+    this.studentId = studentId;
+    this.studentName = studentName;
+    this.activityContent = activityContent;
+    this.observation = observation;
+    this.onSave = onSave;
+    this.targetCharCount = plugin.settings.targetCharCount;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("sa-edit-modal");
+    const headerDiv = contentEl.createDiv({ cls: "sa-edit-header" });
+    headerDiv.createEl("h2", { text: "\u270F\uFE0F \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uC218\uC815" });
+    const studentInfo = headerDiv.createDiv({ cls: "sa-edit-student-info" });
+    studentInfo.createSpan({ text: `${this.studentId}`, cls: "sa-edit-student-id" });
+    studentInfo.createSpan({ text: this.studentName, cls: "sa-edit-student-name" });
+    const activitySection = contentEl.createDiv({ cls: "sa-edit-section" });
+    activitySection.createEl("h4", { text: "\u{1F4DD} \uD559\uC0DD\uD65C\uB3D9\uAE30\uB85D (\uCC38\uACE0\uC6A9)" });
+    const activityBox = activitySection.createDiv({ cls: "sa-edit-activity-box" });
+    activityBox.setText(this.activityContent);
+    const editSection = contentEl.createDiv({ cls: "sa-edit-section" });
+    editSection.createEl("h4", { text: "\u{1F4CB} \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D \uC218\uC815" });
+    this.textArea = editSection.createEl("textarea", {
+      cls: "sa-edit-textarea",
+      attr: { rows: "8" }
+    });
+    this.textArea.value = this.observation;
+    this.textArea.addEventListener("input", () => this.updateCounts());
+    const countsDiv = editSection.createDiv({ cls: "sa-edit-counts" });
+    const targetMin = Math.round(this.targetCharCount * 0.85);
+    const targetMax = Math.round(this.targetCharCount * 1.15);
+    const targetInfo = countsDiv.createDiv({ cls: "sa-edit-target" });
+    targetInfo.innerHTML = `\u{1F3AF} \uBAA9\uD45C: <strong>${this.targetCharCount}\uC790</strong> (${targetMin}~${targetMax}\uC790)`;
+    const currentCounts = countsDiv.createDiv({ cls: "sa-edit-current-counts" });
+    this.charCountEl = currentCounts.createSpan({ cls: "sa-edit-char-count" });
+    this.byteCountEl = currentCounts.createSpan({ cls: "sa-edit-byte-count" });
+    this.updateCounts();
+    const spellSection = contentEl.createDiv({ cls: "sa-edit-section" });
+    const spellHeader = spellSection.createDiv({ cls: "sa-edit-spell-header" });
+    spellHeader.createEl("h4", { text: "\u{1F4D6} \uB9DE\uCDA4\uBC95 \uAC80\uC0AC" });
+    const spellCheckBtn = spellHeader.createEl("button", {
+      text: "\u{1F50D} \uAC80\uC0AC\uD558\uAE30",
+      cls: "sa-spell-check-btn"
+    });
+    spellCheckBtn.addEventListener("click", () => this.runSpellCheck());
+    this.spellResultsEl = spellSection.createDiv({ cls: "sa-spell-results" });
+    this.spellResultsEl.setText("\uB9DE\uCDA4\uBC95 \uAC80\uC0AC \uBC84\uD2BC\uC744 \uD074\uB9AD\uD558\uC138\uC694.");
+    const buttonContainer = contentEl.createDiv({ cls: "sa-edit-buttons" });
+    const cancelBtn = buttonContainer.createEl("button", {
+      text: "\uCDE8\uC18C",
+      cls: "sa-edit-cancel-btn"
+    });
+    cancelBtn.addEventListener("click", () => this.close());
+    const saveBtn = buttonContainer.createEl("button", {
+      text: "\u{1F4BE} \uC800\uC7A5",
+      cls: "sa-edit-save-btn"
+    });
+    saveBtn.addEventListener("click", () => this.saveChanges());
+  }
+  updateCounts() {
+    if (!this.textArea || !this.charCountEl || !this.byteCountEl)
+      return;
+    const text = this.textArea.value;
+    const chars = countChars(text);
+    const bytes = countBytes(text);
+    const targetMin = Math.round(this.targetCharCount * 0.85);
+    const targetMax = Math.round(this.targetCharCount * 1.15);
+    let charClass = "normal";
+    if (chars < targetMin) {
+      charClass = "under";
+    } else if (chars > targetMax) {
+      charClass = "over";
+    } else {
+      charClass = "good";
+    }
+    this.charCountEl.innerHTML = `\u{1F4CA} <span class="${charClass}">${chars}\uC790</span>`;
+    this.byteCountEl.innerHTML = `\u{1F4BE} ${bytes}\uBC14\uC774\uD2B8`;
+  }
+  async runSpellCheck() {
+    if (!this.textArea || !this.spellResultsEl)
+      return;
+    const text = this.textArea.value;
+    if (!text.trim()) {
+      this.spellResultsEl.setText("\uAC80\uC0AC\uD560 \uB0B4\uC6A9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    this.spellResultsEl.setText("\u23F3 \uB9DE\uCDA4\uBC95 \uAC80\uC0AC \uC911...");
+    try {
+      const results = await checkSpellByDaum(text);
+      this.spellResultsEl.empty();
+      if (results.length === 0) {
+        const successMsg = this.spellResultsEl.createDiv({ cls: "sa-spell-success" });
+        successMsg.setText("\u2705 \uB9DE\uCDA4\uBC95 \uC624\uB958\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4!");
+        return;
+      }
+      const resultHeader = this.spellResultsEl.createDiv({ cls: "sa-spell-result-header" });
+      resultHeader.setText(`\u{1F534} ${results.length}\uAC1C\uC758 \uC624\uB958\uAC00 \uBC1C\uACAC\uB418\uC5C8\uC2B5\uB2C8\uB2E4.`);
+      for (const result of results) {
+        const itemDiv = this.spellResultsEl.createDiv({ cls: "sa-spell-item" });
+        const errorDiv = itemDiv.createDiv({ cls: "sa-spell-error" });
+        errorDiv.createSpan({ text: "\uC624\uB958: ", cls: "sa-spell-label" });
+        errorDiv.createSpan({ text: result.token, cls: "sa-spell-token" });
+        if (result.suggestions.length > 0) {
+          const suggestDiv = itemDiv.createDiv({ cls: "sa-spell-suggest" });
+          suggestDiv.createSpan({ text: "\uC81C\uC548: ", cls: "sa-spell-label" });
+          for (const suggestion of result.suggestions) {
+            const suggestionBtn = suggestDiv.createEl("button", {
+              text: suggestion,
+              cls: "sa-spell-suggestion-btn"
+            });
+            suggestionBtn.addEventListener("click", () => {
+              this.applySuggestion(result.token, suggestion);
+            });
+          }
+        }
+        if (result.info) {
+          const infoDiv = itemDiv.createDiv({ cls: "sa-spell-info" });
+          infoDiv.setText(result.info);
+        }
+      }
+    } catch (error) {
+      this.spellResultsEl.empty();
+      const errorMsg = this.spellResultsEl.createDiv({ cls: "sa-spell-error-msg" });
+      errorMsg.setText("\u274C \uB9DE\uCDA4\uBC95 \uAC80\uC0AC \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.");
+      new import_obsidian.Notice("\uB9DE\uCDA4\uBC95 \uAC80\uC0AC \uC2E4\uD328: " + (error instanceof Error ? error.message : "\uC54C \uC218 \uC5C6\uB294 \uC624\uB958"));
+    }
+  }
+  applySuggestion(originalToken, suggestion) {
+    if (!this.textArea)
+      return;
+    const currentText = this.textArea.value;
+    const newText = currentText.replace(originalToken, suggestion);
+    this.textArea.value = newText;
+    this.updateCounts();
+    new import_obsidian.Notice(`\u2705 "${originalToken}" \u2192 "${suggestion}" \uAD50\uC815\uB428`);
+    this.runSpellCheck();
+  }
+  saveChanges() {
+    if (!this.textArea)
+      return;
+    const newObservation = this.textArea.value;
+    const charCount = countChars(newObservation);
+    const byteCount = countBytes(newObservation);
+    this.onSave(newObservation, charCount, byteCount);
+    this.close();
+    new import_obsidian.Notice(`\u2705 ${this.studentName} \uAD50\uC0AC\uAD00\uCC30\uAE30\uB85D\uC774 \uC800\uC7A5\uB418\uC5C8\uC2B5\uB2C8\uB2E4.`);
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
 var StudentActivitySettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -1085,6 +1276,7 @@ var StudentActivityPlugin = class extends import_obsidian.Plugin {
 <div class="sa-card-footer">
 <span class="sa-card-stat">\u{1F4CA} ${r.charCount}\uC790</span>
 <span class="sa-card-stat">\u{1F4BE} ${r.byteCount}\uBC14\uC774\uD2B8</span>
+<button class="sa-card-edit-btn" data-edit-index="${idx}" data-student-id="${r.studentId}" data-student-name="${r.studentName}">\u270F\uFE0F \uC218\uC815</button>
 </div>
 </div>`;
     }).join("\n");
@@ -1273,6 +1465,23 @@ ${generateMarkdownTable(records)}
           this.toggleAllCheckboxes(selectAll);
         });
       });
+      const editButtons = document.querySelectorAll(".sa-card-edit-btn");
+      editButtons.forEach((btn) => {
+        if (btn.hasAttribute("data-listener-attached"))
+          return;
+        btn.setAttribute("data-listener-attached", "true");
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const button = e.currentTarget;
+          const editIndex = button.getAttribute("data-edit-index");
+          const studentId = button.getAttribute("data-student-id") || "";
+          const studentName = button.getAttribute("data-student-name") || "";
+          if (editIndex !== null) {
+            this.openEditModal(parseInt(editIndex), studentId, studentName);
+          }
+        });
+      });
     }, 500);
   }
   /**
@@ -1373,5 +1582,83 @@ ${generateMarkdownTable(records)}
         allCards.forEach((card) => card.classList.remove("print-target"));
       }, 1e3);
     }, 100);
+  }
+  /**
+   * 수정 모달 열기
+   */
+  openEditModal(studentIndex, studentId, studentName) {
+    var _a, _b;
+    const container = document.querySelector(".sa-result-container");
+    if (!container) {
+      new import_obsidian.Notice("\uC218\uC815\uD560 \uB0B4\uC6A9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    const card = container.querySelector(`.sa-student-card[data-student-index="${studentIndex}"]`);
+    if (!card) {
+      new import_obsidian.Notice("\uD559\uC0DD \uC815\uBCF4\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    const activityContent = ((_a = card.querySelector(".sa-card-content.activity")) == null ? void 0 : _a.textContent) || "";
+    const observationContent = ((_b = card.querySelector(".sa-card-content.observation")) == null ? void 0 : _b.textContent) || "";
+    new EditObservationModal(
+      this.app,
+      this,
+      studentIndex,
+      studentId,
+      studentName,
+      activityContent,
+      observationContent,
+      async (newObservation, charCount, byteCount) => {
+        await this.updateObservationInNote(studentIndex, newObservation, charCount, byteCount);
+      }
+    ).open();
+  }
+  /**
+   * 교사관찰기록 수정 후 노트 업데이트
+   */
+  async updateObservationInNote(studentIndex, newObservation, charCount, byteCount) {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile) {
+      new import_obsidian.Notice("\uD65C\uC131 \uD30C\uC77C\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      return;
+    }
+    try {
+      let content = await this.app.vault.read(activeFile);
+      const cardPattern = new RegExp(
+        `(<div class="sa-student-card[^"]*" data-student-index="${studentIndex}">[\\s\\S]*?<div class="sa-card-content observation">)([\\s\\S]*?)(</div>\\s*</div>\\s*<div class="sa-card-footer">)`,
+        "g"
+      );
+      const newContent = content.replace(cardPattern, `$1${newObservation}$3`);
+      if (newContent !== content) {
+        const footerPattern = new RegExp(
+          `(<div class="sa-student-card[^"]*" data-student-index="${studentIndex}">[\\s\\S]*?<div class="sa-card-footer">[\\s\\S]*?<span class="sa-card-stat">\u{1F4CA} )\\d+(\uC790</span>\\s*<span class="sa-card-stat">\u{1F4BE} )\\d+(\uBC14\uC774\uD2B8</span>)`,
+          "g"
+        );
+        const finalContent = newContent.replace(
+          footerPattern,
+          `$1${charCount}$2${byteCount}$3`
+        );
+        await this.app.vault.modify(activeFile, finalContent);
+        const container = document.querySelector(".sa-result-container");
+        if (container) {
+          const card = container.querySelector(`.sa-student-card[data-student-index="${studentIndex}"]`);
+          if (card) {
+            const obsEl = card.querySelector(".sa-card-content.observation");
+            if (obsEl)
+              obsEl.textContent = newObservation;
+            const stats = card.querySelectorAll(".sa-card-stat");
+            if (stats.length >= 2) {
+              stats[0].textContent = `\u{1F4CA} ${charCount}\uC790`;
+              stats[1].textContent = `\u{1F4BE} ${byteCount}\uBC14\uC774\uD2B8`;
+            }
+          }
+        }
+      } else {
+        new import_obsidian.Notice("\u26A0\uFE0F \uC218\uC815\uD560 \uC704\uCE58\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
+      }
+    } catch (error) {
+      console.error("Error updating note:", error);
+      new import_obsidian.Notice("\u274C \uB178\uD2B8 \uC218\uC815 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.");
+    }
   }
 };
